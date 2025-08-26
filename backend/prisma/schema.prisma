@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Rol {
+  ADMIN
+  COLABORADOR
+  CLIENTE
+}
+
+model Empresa {
+  id        Int       @id @default(autoincrement())
+  nombre    String
+  usuarios  Usuario[]
+  proyectos Proyecto[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Usuario {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  nombre       String
+  avatar       String?
+  proveedor    String    // "google" o "github"
+  oauthId      String    // ID del proveedor externo
+  rol          Rol
+  empresaId    Int
+  empresa      Empresa   @relation(fields: [empresaId], references: [id])
+  tareas       Tarea[]   @relation("UsuariosAsignados")
+  timers       Timer[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Proyecto {
+  id             Int       @id @default(autoincrement())
+  nombre         String
+  descripcion    String?
+  horasMensuales Int?
+  empresaId      Int
+  empresa        Empresa   @relation(fields: [empresaId], references: [id])
+  tareas         Tarea[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Tarea {
+  id          Int        @id @default(autoincrement())
+  titulo      String
+  descripcion String?
+  proyectoId  Int
+  proyecto    Proyecto   @relation(fields: [proyectoId], references: [id])
+  usuariosAsignados Usuario[] @relation("UsuariosAsignados")
+  timers      Timer[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Timer {
+  id        Int      @id @default(autoincrement())
+  inicio    DateTime @default(now())
+  fin       DateTime?           // Se llena al detener el temporizador
+  usuarioId Int
+  tareaId   Int
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  tarea     Tarea    @relation(fields: [tareaId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
