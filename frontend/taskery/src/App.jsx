@@ -7,7 +7,7 @@ import EmpresaCreateModal from "./components/EmpresaCreateModal";
 import ProyectoCreateModal from "./components/ProyectoCreateModal";
 import TareaCreateModal from "./components/TareaCreateModal";
 import { api } from "./lib/api";
-import { getToken, pickTokenFromURL, clearToken } from "./lib/auth";
+import { getToken, pickTokenFromURL, clearToken, getInviteToken, clearInviteToken } from "./lib/auth";
 
 // ✅ Importa el board con dnd-kit
 import KanbanBoardDnd from "./components/KanbanBoardDnd";
@@ -22,6 +22,7 @@ export default function App() {
   const [token, setToken] = useState(getToken());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [usuario, setUsuario] = useState(null);
 
   // Empresas / Proyectos / Tareas
   const [empresas, setEmpresas] = useState([]);
@@ -44,27 +45,51 @@ export default function App() {
     setToken(getToken());
   }, []);
 
-  // 2) Carga empresas del usuario autenticado
-  useEffect(() => {
-    if (!token) return;
-
+  async function loadEmpresas() {
     setLoading(true);
     setError("");
 
+    try {
+      const res = await api.get("/empresas/mis-empresas");
+      const list = res.data || [];
+      setEmpresas(list);
+      if (list.length > 0 && !selectedEmpresa) {
+        setSelectedEmpresa(list[0]);
+      }
+    } catch (err) {
+      console.error("Error al cargar empresas:", err);
+      setError("No se pudieron cargar las empresas.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // 2) Carga empresas del usuario autenticado
+  useEffect(() => {
+    if (!token) return;
+    loadEmpresas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  // 2.1) Obtiene datos del usuario y acepta invitación si existe
+  useEffect(() => {
+    if (!token) return;
+
     api
-      .get("/empresas/mis-empresas")
-      .then((res) => {
-        const list = res.data || [];
-        setEmpresas(list);
-        if (list.length > 0 && !selectedEmpresa) {
-          setSelectedEmpresa(list[0]);
-        }
-      })
-      .catch((err) => {
-        console.error("Error al cargar empresas:", err);
-        setError("No se pudieron cargar las empresas.");
-      })
-      .finally(() => setLoading(false));
+      .get('/me')
+      .then((res) => setUsuario(res.data))
+      .catch(() => setUsuario(null));
+
+    const invite = getInviteToken();
+    if (invite) {
+      api
+        .post('/invitaciones/aceptar', { token: invite })
+        .then(() => {
+          clearInviteToken();
+          loadEmpresas();
+        })
+        .catch((err) => console.error('Error aceptando invitación:', err));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
@@ -121,6 +146,18 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, selectedProyecto]);
 
+  function handleInvite() {
+    const email = prompt('Correo del usuario a invitar:');
+    if (!email || !selectedEmpresa) return;
+    api
+      .post('/invitaciones', { email, empresaId: selectedEmpresa.id })
+      .then(() => alert('Invitación enviada'))
+      .catch((err) => {
+        console.error('Error enviando invitación:', err);
+        alert('No se pudo enviar la invitación');
+      });
+  }
+
   // 5) Logout manual
   function handleLogout() {
     clearToken();
@@ -129,6 +166,7 @@ export default function App() {
     setProyectos([]);
     setSelectedEmpresa(null);
     setSelectedProyecto(null);
+    setUsuario(null);
     setTareas([]);
   }
 
@@ -192,6 +230,25 @@ export default function App() {
                   {error}
                 </span>
               )}
+              {usuario && (
+                <div className="flex items-center gap-2">
+                  {usuario.avatar && (
+                    <img
+                      src={usuario.avatar}
+                      alt="avatar"
+                      className="w-6 h-6 rounded-full"
+                    />
+                  )}
+                  <span className="text-sm">{usuario.nombre}</span>
+                </div>
+              )}
+              <button
+                onClick={handleInvite}
+                className="text-xs px-3 py-1.5 rounded-xl bg:white/5 hover:bg-white/10 border border-white/10"
+                disabled={!selectedEmpresa}
+              >
+                Invitar
+              </button>
               <button
                 onClick={handleLogout}
                 className="text-xs px-3 py-1.5 rounded-xl bg:white/5 hover:bg-white/10 border border-white/10"
