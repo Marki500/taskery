@@ -198,8 +198,11 @@ export default function App() {
           usuario={usuario}
           onLogout={handleLogout}
           pages={[
-            { href: "#", label: "Empresas" },
-            { href: "#", label: "Proyectos" },
+            { href: "/empresas", label: "Empresas" },
+            {
+              href: selectedEmpresa ? `/proyectos/${selectedEmpresa.id}` : "/proyectos",
+              label: "Proyectos",
+            },
           ]}
         />
         <div className="flex flex-1 relative">

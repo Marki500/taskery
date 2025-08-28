@@ -38,7 +38,17 @@ export default function ProyectosPage({ empresaId }) {
   return (
     <ActiveTimerProvider>
       <div className="min-h-screen flex flex-col bg-neutral-950 text-white">
-        <Navbar usuario={usuario} onLogout={handleLogout} />
+        <Navbar
+          usuario={usuario}
+          onLogout={handleLogout}
+          pages={[
+            { href: '/empresas', label: 'Empresas' },
+            {
+              href: empresaId ? `/proyectos/${empresaId}` : '/proyectos',
+              label: 'Proyectos',
+            },
+          ]}
+        />
         <main className="flex-1 p-4">
           <div className="flex justify-between mb-3">
             <h1 className="text-xl text-sky-200">Proyectos</h1>
