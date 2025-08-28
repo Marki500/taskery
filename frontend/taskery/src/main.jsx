@@ -7,19 +7,15 @@ import ProyectosPage from './pages/ProyectosPage.jsx'
 
 // Pequeño ruteo basado en la URL sin depender de react-router
 const path = window.location.pathname
+const params = new URLSearchParams(window.location.search)
 let Page = App
 let pageProps = {}
 
 if (path.startsWith('/empresas')) {
   Page = EmpresasPage
 } else if (path.startsWith('/proyectos')) {
-  const parts = path.split('/').filter(Boolean)
-  if (parts.length > 1) {
-    Page = ProyectosPage
-    pageProps.empresaId = parts[1]
-  } else {
-    window.location.href = '/empresas'
-  }
+  Page = ProyectosPage
+  pageProps.empresaId = params.get('empresaId')
 }
 
 createRoot(document.getElementById('root')).render(
