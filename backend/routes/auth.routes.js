@@ -52,14 +52,21 @@ router.get('/me', verificarToken, async (req, res) => {
 
     const usuario = await prisma.usuario.findUnique({
       where: { id: req.usuario.id },
-      include: { empresa: true }
+      include: { empresas: true }
     })
 
     if (!usuario) {
       return res.status(404).json({ mensaje: 'Usuario no encontrado' })
     }
+    // Prisma puede retornar campos BigInt que Express no sabe serializar.
+    // Convertimos cualquier BigInt a Number antes de responder.
+    const usuarioLimpio = JSON.parse(
+      JSON.stringify(usuario, (key, value) =>
+        typeof value === 'bigint' ? Number(value) : value
+      )
+    )
 
-    res.json(usuario)
+    res.json(usuarioLimpio)
   } catch (err) {
     res.status(500).json({ mensaje: 'Error al obtener el usuario' })
   }

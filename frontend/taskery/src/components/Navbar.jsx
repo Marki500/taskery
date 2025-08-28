@@ -4,10 +4,10 @@ export default function Navbar({ usuario, onLogout, pages = [] }) {
   return (
     <nav className="flex items-center justify-between px-6 py-3 bg-white/5 backdrop-blur border-b border-white/10">
       <div className="flex items-center gap-6">
-        <img src="/Taskery-logo.webp" alt="Taskery Logo" className="h-8" />
+        <img src="/Taskery-logo.webp" alt="Taskery Logo" className="h-12" />
         <ul className="flex items-center gap-4">
-          {pages.map((p) => (
-            <li key={p.href}>
+          {pages.map((p, index) => (
+            <li key={index}>
               <a
                 href={p.href}
                 className="text-sm text-slate-200 hover:text-white"
