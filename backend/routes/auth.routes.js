@@ -44,6 +44,12 @@ router.get('/failed', (req, res) => {
 
 router.get('/me', verificarToken, async (req, res) => {
   try {
+    // Si por alguna razón el middleware no adjunta el usuario,
+    // respondemos con 401 en lugar de provocar un fallo interno.
+    if (!req.usuario || !req.usuario.id) {
+      return res.status(401).json({ mensaje: 'No autenticado' })
+    }
+
     const usuario = await prisma.usuario.findUnique({
       where: { id: req.usuario.id },
       include: { empresa: true }
