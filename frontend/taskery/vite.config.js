@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path' // ✅ Importamos 'path' para usar alias
+import process from 'node:process'
 
 // ⚠️ Estamos detrás de Apache en https://todo.bycram.dev
 //    - Vite escucha en 0.0.0.0:5173
@@ -12,7 +13,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'), // ✅ Alias @ apunta a src/
+      '@': path.resolve(process.cwd(), 'src'), // ✅ Alias @ apunta a src/
     },
   },
   server: {

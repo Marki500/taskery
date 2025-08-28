@@ -12,6 +12,7 @@ import { getToken, pickTokenFromURL, clearToken, getInviteToken, clearInviteToke
 // ✅ Importa el board con dnd-kit
 import KanbanBoardDnd from "./components/KanbanBoardDnd";
 import { actualizarEstadoTarea, reordenarTareas } from "./services/tareas";
+import { getTimersByTask } from "./services/timers";
 
 // ✅ NUEVO: Contexto del timer + barra
 import { ActiveTimerProvider } from "./context/ActiveTimerContext";
@@ -127,7 +128,24 @@ export default function App() {
     setError("");
     try {
       const res = await api.get(`/tareas/${selectedProyecto.id}`);
-      setTareas(res.data || []);
+      const list = res.data || [];
+      const withTimes = await Promise.all(
+        list.map(async (t) => {
+          try {
+            const timers = await getTimersByTask(t.id);
+            const totalMs = timers
+              .filter((tm) => tm.fin)
+              .reduce(
+                (sum, tm) => sum + (new Date(tm.fin) - new Date(tm.inicio)),
+                0
+              );
+            return { ...t, totalMs };
+          } catch {
+            return { ...t, totalMs: 0 };
+          }
+        })
+      );
+      setTareas(withTimes);
     } catch (err) {
       console.error("Error al cargar tareas:", err);
       setError("No se pudieron cargar las tareas.");

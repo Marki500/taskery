@@ -21,6 +21,7 @@ export default function Navbar({ usuario, onLogout, pages = [] }) {
       <div className="flex items-center gap-3">
         {usuario && (
           <div className="flex items-center gap-2">
+            <span className="text-sm">{usuario.nombre}</span>
             {usuario.avatar && (
               <img
                 src={usuario.avatar}
@@ -28,7 +29,6 @@ export default function Navbar({ usuario, onLogout, pages = [] }) {
                 className="w-8 h-8 rounded-full"
               />
             )}
-            <span className="text-sm">{usuario.nombre}</span>
           </div>
         )}
         <button

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion as Motion } from 'framer-motion'
 import FocusLock from 'react-focus-lock'
 
 /**
@@ -71,7 +71,7 @@ export default function BaseModal({
       {open && (
         <div className="fixed inset-0 z-50 grid place-items-center p-4">
           {/* Backdrop */}
-          <motion.button
+          <Motion.button
             aria-hidden
             className="absolute inset-0 bg-black"
             style={{ opacity: 0.6 }}
@@ -84,7 +84,7 @@ export default function BaseModal({
 
           {/* Focus trap + Panel */}
           <FocusLock returnFocus={true} autoFocus={false}>
-            <motion.div
+            <Motion.div
               role="dialog"
               aria-modal="true"
               aria-labelledby="base-modal-title"
@@ -114,7 +114,7 @@ export default function BaseModal({
               </h2>
 
               {children}
-            </motion.div>
+              </Motion.div>
           </FocusLock>
         </div>
       )}

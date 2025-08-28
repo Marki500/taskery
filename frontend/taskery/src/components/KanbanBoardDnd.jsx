@@ -50,6 +50,14 @@ function badgeColor(p) {
   }
 }
 
+function msToHMS(ms) {
+  const s = Math.floor(ms / 1000);
+  const h = String(Math.floor(s / 3600)).padStart(2, "0");
+  const m = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
+  const ss = String(s % 60).padStart(2, "0");
+  return `${h}:${m}:${ss}`;
+}
+
 function TareaCardSortable({ tarea, onEdit, activeTareaId, startTimer, stopTimer }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: String(tarea.id) });
@@ -101,6 +109,12 @@ function TareaCardSortable({ tarea, onEdit, activeTareaId, startTimer, stopTimer
                 )}`}
               >
                 {tarea.prioridad}
+              </span>
+            )}
+
+            {typeof tarea.totalMs === 'number' && (
+              <span className="text-[11px] font-mono text-slate-400">
+                {msToHMS(tarea.totalMs)}
               </span>
             )}
 
