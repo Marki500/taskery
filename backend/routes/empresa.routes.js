@@ -1,17 +1,23 @@
 // Importamos el router de Express para definir rutas separadas
-const express = require('express')
-const router = express.Router()
+const express = require('express');
+const router = express.Router();
+const empresaController = require('../controllers/empresa.controller');
+const { verificarToken } = require('../auth/jwt');
 
-// Importamos las funciones del controlador (¡ambas!)
-const { crearEmpresa, obtenerEmpresaPorId } = require('../controllers/empresa.controller')
+// Ruta protegida para crear empresa
+router.post('/', verificarToken, empresaController.crearEmpresa);
 
-// Definimos la ruta POST /empresas que ejecuta la función crearEmpresa
-router.post('/', crearEmpresa)
+// Ruta protegida para listar empresas del usuario autenticado
+router.get('/mis-empresas', verificarToken, empresaController.listarEmpresasDelUsuario)
+
+// Ruta para editar una empresa
+// Debe ser una función, por ejemplo:
+router.put('/:id', verificarToken, empresaController.editarEmpresa);
 
 // GET /empresas/:id  -> Devuelve la empresa, sus proyectos y usuarios
-router.get('/:id', obtenerEmpresaPorId)
+router.get('/:id', verificarToken, empresaController.obtenerEmpresaPorId);
 
 // Exportamos este router para poder usarlo en index.js
-module.exports = router
+module.exports = router;
 
 

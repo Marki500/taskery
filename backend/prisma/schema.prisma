@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -19,63 +16,107 @@ enum Rol {
   CLIENTE
 }
 
+enum EstadoTarea {
+  PENDIENTE
+  EN_PROGRESO
+  COMPLETADA
+}
+
+enum PrioridadTarea {
+  BAJA
+  MEDIA
+  ALTA
+}
+
 model Empresa {
-  id        Int       @id @default(autoincrement())
+  id        Int        @id @default(autoincrement())
   nombre    String
-  usuarios  Usuario[]
+  color     String     @default("#FFFFFF")
+  usuarios  Usuario[]  @relation("EmpresasUsuarios")
   proyectos Proyecto[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model Usuario {
-  id           Int       @id @default(autoincrement())
-  email        String    @unique
-  nombre       String
-  avatar       String?
-  proveedor    String    // "google" o "github"
-  oauthId      String    // ID del proveedor externo
-  rol          Rol
-  empresaId    Int
-  empresa      Empresa   @relation(fields: [empresaId], references: [id])
-  tareas       Tarea[]   @relation("UsuariosAsignados")
-  timers       Timer[]
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id        Int     @id @default(autoincrement())
+  email     String  @unique
+  nombre    String
+  avatar    String?
+  proveedor String
+  oauthId   String
+  rol       Rol
+
+  // M:N con Empresa
+  empresas Empresa[] @relation("EmpresasUsuarios")
+
+  // M:N con Tarea (asignaciones)
+  tareas Tarea[] @relation("UsuariosAsignados")
+
+  timers    Timer[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Proyecto {
-  id             Int       @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   nombre         String
   descripcion    String?
   horasMensuales Int?
   empresaId      Int
-  empresa        Empresa   @relation(fields: [empresaId], references: [id])
+  empresa        Empresa  @relation(fields: [empresaId], references: [id])
   tareas         Tarea[]
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([empresaId])
 }
 
 model Tarea {
-  id          Int        @id @default(autoincrement())
-  titulo      String
+  id          Int      @id @default(autoincrement())
+  nombre      String
   descripcion String?
   proyectoId  Int
-  proyecto    Proyecto   @relation(fields: [proyectoId], references: [id])
+  proyecto    Proyecto @relation(fields: [proyectoId], references: [id])
+
+  // M:N implícita con Usuario
   usuariosAsignados Usuario[] @relation("UsuariosAsignados")
-  timers      Timer[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+
+  timers    Timer[]
+  estado    EstadoTarea    @default(PENDIENTE)
+  prioridad PrioridadTarea @default(MEDIA)
+
+  // 👇 NUEVO: orden dentro de la columna (estado)
+  posicion Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Índices útiles para el Kanban
+  @@index([proyectoId, estado, posicion])
+  @@index([proyectoId])
 }
 
 model Timer {
-  id        Int      @id @default(autoincrement())
-  inicio    DateTime @default(now())
-  fin       DateTime?           // Se llena al detener el temporizador
+  id        Int       @id @default(autoincrement())
+  inicio    DateTime  @default(now())
+  fin       DateTime?
   usuarioId Int
   tareaId   Int
+
+  // NUEVO:
+  note      String?
+  source    String  @default("timer")
+  activeKey String? // 'ACTIVE' si está en marcha; NULL si está parado
+
   usuario   Usuario  @relation(fields: [usuarioId], references: [id])
   tarea     Tarea    @relation(fields: [tareaId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // 👇 Garantiza 1 solo timer activo por usuario (solo se colisiona cuando activeKey='ACTIVE')
+  @@unique([usuarioId, activeKey])
+  @@index([usuarioId])
+  @@index([tareaId])
+  @@index([inicio])
 }

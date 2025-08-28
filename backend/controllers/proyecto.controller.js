@@ -1,38 +1,95 @@
-// Importamos PrismaClient para interactuar con la base de datos
+// controllers/proyecto.controller.js
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
-// Crear un nuevo proyecto
+/**
+ * POST /proyectos
+ * Body:
+ *  - nombre: string (requerido)
+ *  - empresaId: number (requerido)
+ *  - horasMensuales?: number
+ *  - descripcion?: string
+ */
 async function crearProyecto(req, res) {
-  const { nombre, descripcion, horasMensuales } = req.body
-  const empresaId = req.usuario.empresaId
+  const { nombre, empresaId, horasMensuales, descripcion } = req.body
+  const usuarioId = req.usuario?.id
 
-  if (!nombre) {
-    return res.status(400).json({ error: 'El nombre del proyecto es obligatorio' })
+  // Validaciones básicas
+  if (!nombre || !empresaId) {
+    return res.status(400).json({ error: 'nombre y empresaId son obligatorios' })
   }
 
   try {
-    const proyecto = await prisma.proyecto.create({
-      data: {
-        nombre,
-        descripcion,
-        horasMensuales,
-        empresaId
-      }
+    // 1) Verificar que el usuario pertenece a la empresa
+    const pertenece = await prisma.empresa.findFirst({
+      where: {
+        id: Number(empresaId),
+        usuarios: { some: { id: Number(usuarioId) } },
+      },
+      select: { id: true },
     })
 
-    res.status(201).json(proyecto)
+    if (!pertenece) {
+      return res.status(403).json({ error: 'No tienes acceso a esta empresa' })
+    }
+
+    // 2) Crear el proyecto conectándolo a la empresa (relación requerida por Prisma)
+    const proyecto = await prisma.proyecto.create({
+      data: {
+        nombre: nombre.trim(),
+        descripcion: descripcion?.trim() || null,
+        horasMensuales:
+          typeof horasMensuales === 'number'
+            ? horasMensuales
+            : horasMensuales !== undefined
+            ? Number(horasMensuales)
+            : null,
+        empresa: { connect: { id: Number(empresaId) } }, // 👈 clave
+      },
+      select: {
+        id: true,
+        nombre: true,
+        descripcion: true,
+        horasMensuales: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    })
+
+    return res.status(201).json(proyecto)
   } catch (error) {
     console.error('[crearProyecto] Error:', error)
-    res.status(500).json({ error: 'Error al crear el proyecto' })
+    return res.status(500).json({ error: 'Error al crear el proyecto' })
   }
 }
 
-// Listar proyectos por empresa
+/**
+ * GET /proyectos?empresaId=123
+ * Lista proyectos de una empresa a la que el usuario pertenece
+ */
 async function listarProyectosPorEmpresa(req, res) {
-  const empresaId = req.usuario.empresaId
+  const empresaId = Number(req.query.empresaId)
+  const usuarioId = req.usuario?.id
+
+  if (!empresaId) {
+    return res.status(400).json({ error: 'empresaId es obligatorio' })
+  }
 
   try {
+    // Verificar pertenencia
+    const pertenece = await prisma.empresa.findFirst({
+      where: {
+        id: empresaId,
+        usuarios: { some: { id: Number(usuarioId) } },
+      },
+      select: { id: true },
+    })
+
+    if (!pertenece) {
+      return res.status(403).json({ error: 'No tienes acceso a esta empresa' })
+    }
+
+    // Listar
     const proyectos = await prisma.proyecto.findMany({
       where: { empresaId },
       select: {
@@ -41,9 +98,11 @@ async function listarProyectosPorEmpresa(req, res) {
         descripcion: true,
         horasMensuales: true,
         createdAt: true,
-        updatedAt: true
-      }
+        updatedAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
     })
+
     return res.json(proyectos)
   } catch (error) {
     console.error('[listarProyectosPorEmpresa] Error:', error)
@@ -51,4 +110,69 @@ async function listarProyectosPorEmpresa(req, res) {
   }
 }
 
-module.exports = { crearProyecto, listarProyectosPorEmpresa }
+
+/**
+ * PUT /proyectos/:id
+ * Body opcional: { nombre?, descripcion?, horasMensuales? }
+ */
+async function editarProyecto(req, res) {
+  const { id } = req.params
+  const { nombre, descripcion, horasMensuales } = req.body
+  const usuarioId = req.usuario?.id
+
+  try {
+    const proyectoId = Number(id)
+    if (!proyectoId) return res.status(400).json({ error: 'id inválido' })
+
+    // 1) Cargar proyecto para conocer empresaId
+    const proyecto = await prisma.proyecto.findUnique({
+      where: { id: proyectoId },
+      select: { id: true, empresaId: true },
+    })
+    if (!proyecto) return res.status(404).json({ error: 'Proyecto no encontrado' })
+
+    // 2) Autorizar: usuario debe pertenecer a la empresa del proyecto
+    const pertenece = await prisma.empresa.findFirst({
+      where: {
+        id: proyecto.empresaId,
+        usuarios: { some: { id: Number(usuarioId) } },
+      },
+      select: { id: true },
+    })
+    if (!pertenece) {
+      return res.status(403).json({ error: 'No tienes acceso a este proyecto' })
+    }
+
+    // 3) Construir data parcial
+    const data = {}
+    if (typeof nombre === 'string') data.nombre = nombre.trim()
+    if (typeof descripcion === 'string') data.descripcion = descripcion.trim() || null
+    if (horasMensuales !== undefined) {
+      const hm = Number(horasMensuales)
+      if (!Number.isNaN(hm)) data.horasMensuales = hm
+    }
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: 'Sin cambios enviados' })
+    }
+
+    const actualizado = await prisma.proyecto.update({
+      where: { id: proyectoId },
+      data,
+      select: {
+        id: true,
+        nombre: true,
+        descripcion: true,
+        horasMensuales: true,
+        updatedAt: true,
+      },
+    })
+
+    return res.json(actualizado)
+  } catch (error) {
+    console.error('[editarProyecto] Error:', error)
+    return res.status(500).json({ error: 'Error al editar el proyecto' })
+  }
+}
+
+
+module.exports = { crearProyecto, listarProyectosPorEmpresa, editarProyecto }

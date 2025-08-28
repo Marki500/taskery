@@ -1,20 +1,30 @@
-// Importamos router de Express
+// routes/timers.js
 const express = require('express')
 const router = express.Router()
 
-// Importamos las funciones del controlador
-const { iniciarTimer, detenerTimer, listarTimersPorTarea } = require('../controllers/timer.controller')
+const {
+  iniciarTimer,
+  detenerTimerActual,   // 👈 nuevo
+  detenerTimerPorId,    // 👈 renombrado del tuyo
+  obtenerTimerActivo,   // 👈 nuevo
+  listarTimersPorTarea
+} = require('../controllers/timer.controller')
 
-// Importamos el middleware de autenticación
 const { verificarToken } = require('../auth/jwt')
 
-// POST /timers/start -> Iniciar un temporizador
+// Iniciar o cambiar timer
 router.post('/start', verificarToken, iniciarTimer)
 
-// POST /timers/stop/:id -> Detener un temporizador por su ID
-router.post('/stop/:id', verificarToken, detenerTimer)
+// Detener el timer activo del usuario
+router.post('/stop', verificarToken, detenerTimerActual)
 
-// GET /timers/tarea/:tareaId -> Lista timers de una tarea
+// (Opcional) detener por ID
+router.post('/stop/:id', verificarToken, detenerTimerPorId)
+
+// Consultar el timer activo
+router.get('/active', verificarToken, obtenerTimerActivo)
+
+// Histórico por tarea
 router.get('/tarea/:tareaId', verificarToken, listarTimersPorTarea)
 
 module.exports = router

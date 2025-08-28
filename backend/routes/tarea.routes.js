@@ -1,19 +1,26 @@
-const express = require('express')
-const router = express.Router()
+const express = require('express');
+const router = express.Router();
+const tareaController = require('../controllers/tarea.controller');
 
 // Middleware de autenticación
 const { verificarToken } = require('../auth/jwt')
 
-// Controladores
-const { crearTarea, listarTareasPorProyecto } = require('../controllers/tarea.controller')
-
 // Protege todas las rutas de este archivo
 router.use(verificarToken)
 
-// POST /tareas  -> Crea una tarea nueva
-router.post('/', crearTarea)
+// Ruta para crear una tarea
+// Ahora acepta nombre, descripcion, estado y prioridad
+router.post('/', tareaController.crearTarea);
+
+// Ruta para editar una tarea
+// Ahora acepta nombre, descripcion, estado y prioridad
+router.put('/:id', tareaController.editarTarea);
 
 // GET /tareas/:proyectoId -> Lista tareas del proyecto
-router.get('/:proyectoId', listarTareasPorProyecto)
+// Usamos la función desde el controlador
+router.get('/:proyectoId', tareaController.listarTareasPorProyecto)
+
+// PATCH /tareas/ordenar
+router.patch('/ordenar', tareaController.reordenarTareas);
 
 module.exports = router

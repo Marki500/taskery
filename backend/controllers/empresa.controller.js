@@ -8,7 +8,7 @@ const prisma = new PrismaClient()
  * Body esperado: { "nombre": "Mi Empresa" }
  */
 async function crearEmpresa(req, res) {
-  const { nombre } = req.body
+  const { nombre, color } = req.body // color es el nuevo campo
 
   // Validación básica
   if (!nombre) {
@@ -16,9 +16,20 @@ async function crearEmpresa(req, res) {
   }
 
   try {
+    const usuarioId = req.usuario.id // El usuario autenticado
+
     // Creamos la empresa en la BD
     const empresa = await prisma.empresa.create({
-      data: { nombre }
+      data: {
+        nombre,
+        color, // Nuevo campo: color
+        usuarios: {
+          connect: [{ id: usuarioId }]
+        }
+      },
+      include: {
+        usuarios: true
+      }
     })
 
     // Devolvemos la empresa creada
@@ -60,5 +71,78 @@ async function obtenerEmpresaPorId(req, res) {
   }
 }
 
-// Exportamos ambas funciones
-module.exports = { crearEmpresa, obtenerEmpresaPorId }
+/**
+ * PUT /empresas/:id
+ * Edita una empresa existente.
+ * Body esperado: { "nombre": "...", "color": "..." }
+ */
+async function editarEmpresa(req, res) {
+  const { id } = req.params
+  const { nombre, color } = req.body
+
+  try {
+    const empresaId = Number(id)
+    if (!empresaId) return res.status(400).json({ error: 'id inválido' })
+
+    // 1) Comprobar que el usuario pertenece a la empresa
+    const pertenece = await prisma.empresa.findFirst({
+      where: {
+        id: empresaId,
+        usuarios: { some: { id: req.usuario.id } },
+      },
+      select: { id: true },
+    })
+    if (!pertenece) {
+      return res.status(403).json({ error: 'No tienes acceso a esta empresa' })
+    }
+
+    // 2) Construir data solo con campos presentes
+    const data = {}
+    if (typeof nombre === 'string') data.nombre = nombre.trim()
+    if (typeof color === 'string') data.color = color.trim()
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: 'Sin cambios (nombre/color no enviados)' })
+    }
+
+    const empresa = await prisma.empresa.update({
+      where: { id: empresaId },
+      data,
+    })
+
+    return res.json(empresa)
+  } catch (error) {
+    console.error('[editarEmpresa] Error:', error)
+    return res.status(500).json({ error: 'Error al editar empresa' })
+  }
+}
+
+
+/**
+ * Devuelve todas las empresas a las que pertenece el usuario autenticado.
+ */
+async function listarEmpresasDelUsuario(req, res) {
+  try {
+    const usuarioId = req.usuario.id
+
+    // Busca todas las empresas donde el usuario es miembro
+    const empresas = await prisma.empresa.findMany({
+      where: {
+        usuarios: {
+          some: { id: usuarioId }
+        }
+      }
+    })
+
+    return res.json(empresas)
+  } catch (error) {
+    console.error("Error al listar empresas del usuario:", error)
+    return res.status(500).json({ error: "Error al listar empresas" })
+  }
+}
+
+// Exporta cada función como propiedad del objeto exports
+exports.crearEmpresa = crearEmpresa
+exports.editarEmpresa = editarEmpresa
+exports.obtenerEmpresaPorId = obtenerEmpresaPorId
+exports.listarEmpresasDelUsuario = listarEmpresasDelUsuario
