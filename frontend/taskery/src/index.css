@@ -1,1 +1,12 @@
 @import "tailwindcss";
+
+select {
+  background-color: #1e293b;
+  color: white;
+}
+
+option {
+  background-color: #1e293b;
+  color: white;
+}
+

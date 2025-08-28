@@ -200,7 +200,9 @@ export default function App() {
           pages={[
             { href: "/empresas", label: "Empresas" },
             {
-              href: selectedEmpresa ? `/proyectos/${selectedEmpresa.id}` : "/proyectos",
+              href: selectedEmpresa
+                ? `/proyectos?empresaId=${selectedEmpresa.id}`
+                : "/proyectos",
               label: "Proyectos",
             },
           ]}
