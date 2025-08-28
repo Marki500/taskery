@@ -16,6 +16,7 @@ import { actualizarEstadoTarea, reordenarTareas } from "./services/tareas";
 // ✅ NUEVO: Contexto del timer + barra
 import { ActiveTimerProvider } from "./context/ActiveTimerContext";
 import TimeBar from "./components/TimeBar";
+import Navbar from "./components/Navbar";
 
 export default function App() {
   // Auth & data
@@ -174,30 +175,39 @@ export default function App() {
 
   return (
     <ActiveTimerProvider>
-      <div className="min-h-screen flex bg-neutral-950 text-white">
-        {/* Fondo */}
-        <div
-          className="absolute inset-0 -z-10"
-          style={{
-            background:
-              "radial-gradient(60rem 40rem at -10% -20%, rgba(59,162,237,0.10), transparent 60%), radial-gradient(40rem 30rem at 110% -10%, rgba(59,162,237,0.08), transparent 55%)",
-          }}
+      <div className="min-h-screen flex flex-col bg-neutral-950 text-white">
+        <Navbar
+          usuario={usuario}
+          onLogout={handleLogout}
+          pages={[
+            { href: "#", label: "Empresas" },
+            { href: "#", label: "Proyectos" },
+          ]}
         />
+        <div className="flex flex-1 relative">
+          {/* Fondo */}
+          <div
+            className="absolute inset-0 -z-10"
+            style={{
+              background:
+                "radial-gradient(60rem 40rem at -10% -20%, rgba(59,162,237,0.10), transparent 60%), radial-gradient(40rem 30rem at 110% -10%, rgba(59,162,237,0.08), transparent 55%)",
+            }}
+          />
 
-        {/* Sidebar */}
-        <Sidebar
-          empresas={empresas}
-          selectedEmpresa={selectedEmpresa}
-          onSelectEmpresa={(em) => setSelectedEmpresa(em)}
-          proyectos={proyectos}
-          selectedProyecto={selectedProyecto}
-          onSelectProyecto={(proy) => setSelectedProyecto(proy)}
-          onNuevaEmpresa={() => setShowCreateEmpresa(true)}
-          onNuevoProyecto={() => setShowCreateProyecto(true)}
-        />
+          {/* Sidebar */}
+          <Sidebar
+            empresas={empresas}
+            selectedEmpresa={selectedEmpresa}
+            onSelectEmpresa={(em) => setSelectedEmpresa(em)}
+            proyectos={proyectos}
+            selectedProyecto={selectedProyecto}
+            onSelectProyecto={(proy) => setSelectedProyecto(proy)}
+            onNuevaEmpresa={() => setShowCreateEmpresa(true)}
+            onNuevoProyecto={() => setShowCreateProyecto(true)}
+          />
 
-        {/* Área principal: tareas */}
-        <main className="flex-1 p-10">
+          {/* Área principal: tareas */}
+          <main className="flex-1 p-10">
           <header className="mb-6 flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold text-sky-300">
@@ -230,30 +240,12 @@ export default function App() {
                   {error}
                 </span>
               )}
-              {usuario && (
-                <div className="flex items-center gap-2">
-                  {usuario.avatar && (
-                    <img
-                      src={usuario.avatar}
-                      alt="avatar"
-                      className="w-6 h-6 rounded-full"
-                    />
-                  )}
-                  <span className="text-sm">{usuario.nombre}</span>
-                </div>
-              )}
               <button
                 onClick={handleInvite}
                 className="text-xs px-3 py-1.5 rounded-xl bg:white/5 hover:bg-white/10 border border-white/10"
                 disabled={!selectedEmpresa}
               >
                 Invitar
-              </button>
-              <button
-                onClick={handleLogout}
-                className="text-xs px-3 py-1.5 rounded-xl bg:white/5 hover:bg-white/10 border border-white/10"
-              >
-                Cerrar sesión
               </button>
             </div>
           </header>
@@ -308,15 +300,6 @@ export default function App() {
                   // Optimista en UI: cambia estado y aplica orden en ambas columnas
                   setTareas((prev) => {
                     const byId = Object.fromEntries(prev.map((t) => [t.id, t]));
-                    const moved = byId[tareaId];
-
-                    // columna origen según estado previo
-                    const fromCol = (() => {
-                      const s = String(moved?.estado || "").toLowerCase();
-                      if (s.startsWith("en")) return "en_progreso";
-                      if (s.startsWith("comp")) return "completada";
-                      return "pendiente";
-                    })();
 
                     const targetTasks = targetIds.map((id) => ({ ...byId[id], estado: to }));
                     const sourceTasks = sourceIds.map((id) => byId[id]); // mantiene estado de origen
@@ -389,6 +372,7 @@ export default function App() {
             setTareas((prev) => [nueva, ...prev]);
           }}
         />
+        </div>
       </div>
 
       {/* Barra global del temporizador */}

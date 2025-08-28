@@ -37,22 +37,34 @@ exports.enviarInvitacion = async (req, res) => {
 
     const link = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/?invite=${token}`
 
+    let transporter
+
     if (process.env.SMTP_HOST) {
-      const transporter = nodemailer.createTransport({
+      transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: Number(process.env.SMTP_PORT) || 587,
         secure: false,
         auth: {
           user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS
-        }
+          pass: process.env.SMTP_PASS,
+        },
       })
+    } else if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+      transporter = nodemailer.createTransport({
+        service: process.env.SMTP_SERVICE || 'gmail',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      })
+    }
 
+    if (transporter) {
       await transporter.sendMail({
         to: email,
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
         subject: 'Invitación a Taskery',
-        text: `Has sido invitado a Taskery. Regístrate aquí: ${link}`
+        text: `Has sido invitado a Taskery. Regístrate aquí: ${link}`,
       })
     } else {
       console.log(`Invitación para ${email}: ${link}`)
