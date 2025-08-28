@@ -38,6 +38,7 @@ app.use('/api/usuarios', require('./routes/usuario.routes'))
 app.use('/api/proyectos', require('./routes/proyecto.routes'))
 app.use('/api/tareas', require('./routes/tarea.routes'))
 app.use('/api/timers', require('./routes/timer.routes'))
+app.use('/api/invitaciones', require('./routes/invitacion.routes'))
 
 // 👇 Añade esto para habilitar /api/me
 app.use('/api', require('./routes/auth.routes'))

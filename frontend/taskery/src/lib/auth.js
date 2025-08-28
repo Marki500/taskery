@@ -2,6 +2,7 @@
 // Encapsula todo lo de "token" para que App.jsx quede limpio
 
 const KEY = 'token'; // si prefieres sessionStorage, cambia aquí
+const INVITE_KEY = 'invite-token';
 
 export function setToken(token) {
   // Para MVP, localStorage. En producción: cookie httpOnly + refresh token.
@@ -16,13 +17,26 @@ export function clearToken() {
   localStorage.removeItem(KEY);
 }
 
+export function setInviteToken(token) {
+  localStorage.setItem(INVITE_KEY, token);
+}
+
+export function getInviteToken() {
+  return localStorage.getItem(INVITE_KEY) || '';
+}
+
+export function clearInviteToken() {
+  localStorage.removeItem(INVITE_KEY);
+}
+
 export function pickTokenFromURL() {
-  // Lee ?token=... y lo elimina de la barra de direcciones
+  // Lee ?token=... y ?invite=... y lo elimina de la barra de direcciones
   const params = new URLSearchParams(window.location.search);
   const urlToken = params.get('token');
-  if (urlToken) {
-    setToken(urlToken);
-    // Limpia el query para que al refrescar no repita el proceso
+  const inviteToken = params.get('invite');
+  if (urlToken) setToken(urlToken);
+  if (inviteToken) setInviteToken(inviteToken);
+  if (urlToken || inviteToken) {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 }

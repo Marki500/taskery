@@ -34,6 +34,7 @@ model Empresa {
   color     String     @default("#FFFFFF")
   usuarios  Usuario[]  @relation("EmpresasUsuarios")
   proyectos Proyecto[]
+  invitaciones Invitacion[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 }
@@ -119,4 +120,14 @@ model Timer {
   @@index([usuarioId])
   @@index([tareaId])
   @@index([inicio])
+}
+
+model Invitacion {
+  id        Int      @id @default(autoincrement())
+  email     String
+  token     String   @unique
+  empresaId Int
+  empresa   Empresa  @relation(fields: [empresaId], references: [id])
+  aceptada  Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
