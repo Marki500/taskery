@@ -17,7 +17,9 @@ router.get('/google/callback', passport.authenticate('google', {
   failureRedirect: '/auth/failed'
 }), (req, res) => {
   const token = generarToken(req.user)
-  res.redirect(`https://todo.bycram.dev/login/success?token=${token}`)
+  // Tras autenticarse, redirige a la raíz con el token en la query
+  // para que el frontend lo lea y limpie la URL posteriormente.
+  res.redirect(`https://todo.bycram.dev/?token=${token}`)
 })
 
 // ----------- GITHUB -----------
@@ -31,7 +33,8 @@ router.get('/github/callback', passport.authenticate('github', {
   failureRedirect: '/auth/failed'
 }), (req, res) => {
   const token = generarToken(req.user)
-  res.redirect(`https://todo.bycram.dev/login/success?token=${token}`)
+  // Igual que con Google, enviamos el token a la página principal.
+  res.redirect(`https://todo.bycram.dev/?token=${token}`)
 })
 
 // ----------- FALLO -----------

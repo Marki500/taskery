@@ -11,6 +11,7 @@ import { clearToken } from '@/lib/auth';
 export default function ProyectosPage({ empresaId }) {
   const [proyectos, setProyectos] = useState([]);
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
   const [usuario, setUsuario] = useState(null);
 
   const load = useCallback(async () => {
@@ -53,7 +54,10 @@ export default function ProyectosPage({ empresaId }) {
           <div className="flex justify-between mb-3">
             <h1 className="text-xl text-sky-200">Proyectos</h1>
             <button
-              onClick={() => setOpen(true)}
+              onClick={() => {
+                setEditing(null);
+                setOpen(true);
+              }}
               className="px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-500"
             >
               Nuevo
@@ -72,6 +76,15 @@ export default function ProyectosPage({ empresaId }) {
                     <div className="text-slate-300/80 text-sm">{p.descripcion}</div>
                   )}
                 </div>
+                <button
+                  onClick={() => {
+                    setEditing(p);
+                    setOpen(true);
+                  }}
+                  className="text-xs px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10"
+                >
+                  Editar
+                </button>
               </li>
             ))}
           </ul>
@@ -79,9 +92,14 @@ export default function ProyectosPage({ empresaId }) {
 
         <ProyectoCreateModal
           open={open}
-          onClose={() => setOpen(false)}
+          onClose={() => {
+            setOpen(false);
+            setEditing(null);
+          }}
           empresa={empresaId ? { id: empresaId } : null}
           onCreated={load}
+          onUpdated={load}
+          initialData={editing}
         />
       </div>
       <TimeBar />

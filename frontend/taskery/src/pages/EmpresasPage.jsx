@@ -11,6 +11,7 @@ import { clearToken } from '@/lib/auth';
 export default function EmpresasPage() {
   const [empresas, setEmpresas] = useState([]);
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
   const [usuario, setUsuario] = useState(null);
 
   async function load() {
@@ -46,7 +47,10 @@ export default function EmpresasPage() {
           <div className="flex justify-between mb-3">
             <h1 className="text-xl text-sky-200">Empresas</h1>
             <button
-              onClick={() => setOpen(true)}
+              onClick={() => {
+                setEditing(null);
+                setOpen(true);
+              }}
               className="px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-500"
             >
               Nueva
@@ -65,6 +69,15 @@ export default function EmpresasPage() {
                     <div className="text-slate-300/80 text-sm">{e.descripcion}</div>
                   )}
                 </div>
+                <button
+                  onClick={() => {
+                    setEditing(e);
+                    setOpen(true);
+                  }}
+                  className="text-xs px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10"
+                >
+                  Editar
+                </button>
               </li>
             ))}
           </ul>
@@ -72,8 +85,13 @@ export default function EmpresasPage() {
 
         <EmpresaCreateModal
           open={open}
-          onClose={() => setOpen(false)}
+          onClose={() => {
+            setOpen(false);
+            setEditing(null);
+          }}
           onCreated={load}
+          onUpdated={load}
+          initialData={editing}
         />
       </div>
       <TimeBar />

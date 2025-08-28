@@ -37,6 +37,7 @@ export function pickTokenFromURL() {
   if (urlToken) setToken(urlToken);
   if (inviteToken) setInviteToken(inviteToken);
   if (urlToken || inviteToken) {
-    window.history.replaceState({}, document.title, window.location.pathname);
+    // Limpia los parámetros de la URL y vuelve a la raíz para evitar rutas como /login/success
+    window.history.replaceState({}, document.title, '/');
   }
 }
