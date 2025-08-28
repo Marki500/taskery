@@ -156,9 +156,9 @@ function TareaCardSortable({ tarea, onEdit, activeTareaId, startTimer, stopTimer
             {esActiva && (
               <button
                 onMouseDown={stopDnd}
-                onClick={(e) => {
+                onClick={async (e) => {
                   stopDnd(e);
-                  stopTimer();
+                  await stopTimer();
                 }}
                 className="p-1.5 rounded bg-red-600/20 hover:bg-red-600/30"
                 title="Parar temporizador"
@@ -413,8 +413,15 @@ export default function KanbanBoardDnd({
                           <TareaCardSortable
                             tarea={t}
                             activeTareaId={activeTareaId}
-                            startTimer={start}
-                            stopTimer={stop}
+                            startTimer={async (id) => {
+                              const r = await start(id);
+                              onAfterSave?.();
+                              return r;
+                            }}
+                            stopTimer={async () => {
+                              await stop();
+                              onAfterSave?.();
+                            }}
                             onEdit={(task) => {
                               setEditing(task);
                               setEditOpen(true);

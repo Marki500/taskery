@@ -35,7 +35,12 @@ exports.enviarInvitacion = async (req, res) => {
       }
     })
 
-    const link = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/?invite=${token}`
+    const base =
+      process.env.FRONTEND_URL ||
+      req.get('origin') ||
+      `${req.protocol}://${req.get('host')}` ||
+      'http://localhost:5173'
+    const link = `${base}/?invite=${token}`
 
     let transporter
 
