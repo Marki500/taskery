@@ -50,7 +50,15 @@ function badgeColor(p) {
   }
 }
 
-function TareaCardSortable({ tarea, onEdit, activeTareaId, startTimer, stopTimer }) {
+function msToHMS(ms) {
+  const s = Math.floor(ms / 1000);
+  const h = String(Math.floor(s / 3600)).padStart(2, "0");
+  const m = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
+  const ss = String(s % 60).padStart(2, "0");
+  return `${h}:${m}:${ss}`;
+}
+
+function TareaCardSortable({ tarea, onEdit, activeTareaId, startTimer, stopTimer, runningForMs, onTimerStopped }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: String(tarea.id) });
 
@@ -72,6 +80,8 @@ function TareaCardSortable({ tarea, onEdit, activeTareaId, startTimer, stopTimer
     e.stopPropagation();
   };
 
+  const displayMs = esActiva ? runningForMs : tarea.totalMs || 0;
+
   return (
     <li
       ref={setNodeRef}
@@ -91,6 +101,7 @@ function TareaCardSortable({ tarea, onEdit, activeTareaId, startTimer, stopTimer
                 {tarea.descripcion}
               </span>
             )}
+            <span className="text-xs font-mono text-slate-300/70 mt-1">{msToHMS(displayMs)}</span>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -142,9 +153,10 @@ function TareaCardSortable({ tarea, onEdit, activeTareaId, startTimer, stopTimer
             {esActiva && (
               <button
                 onMouseDown={stopDnd}
-                onClick={(e) => {
+                onClick={async (e) => {
                   stopDnd(e);
-                  stopTimer();
+                  await stopTimer();
+                  onTimerStopped?.();
                 }}
                 className="p-1.5 rounded bg-red-600/20 hover:bg-red-600/30"
                 title="Parar temporizador"
@@ -224,6 +236,7 @@ export default function KanbanBoardDnd({
   onReorderSameColumn, // (col, idsOrdenados)
   onMoveToColumn, // (tareaId, toCol, idsTarget, idsSource)
   onAfterSave, // opcional: refrescar tras guardar en el modal
+  onTimerStopped,
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -231,7 +244,7 @@ export default function KanbanBoardDnd({
   );
 
   // 👇 CONSUME EL CONTEXTO DEL TIMER
-  const { active, start, stop } = useActiveTimer();
+  const { active, runningForMs, start, stop } = useActiveTimer();
   const activeTareaId = active?.tareaId ?? null;
 
   const grouped = useMemo(() => {
@@ -401,6 +414,8 @@ export default function KanbanBoardDnd({
                             activeTareaId={activeTareaId}
                             startTimer={start}
                             stopTimer={stop}
+                            runningForMs={runningForMs}
+                            onTimerStopped={onTimerStopped}
                             onEdit={(task) => {
                               setEditing(task);
                               setEditOpen(true);

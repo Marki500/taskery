@@ -2,6 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path' // ✅ Importamos 'path' para usar alias
+import { fileURLToPath } from 'node:url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // ⚠️ Estamos detrás de Apache en https://todo.bycram.dev
 //    - Vite escucha en 0.0.0.0:5173
