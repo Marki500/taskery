@@ -21,7 +21,9 @@ export default function ProyectosPage({ empresaId }) {
   }
   useEffect(() => { load() }, [empresaId])
 
+
   if (!getToken()) return <Login />
+
 
   return (
     <>
@@ -89,6 +91,8 @@ export default function ProyectosPage({ empresaId }) {
           onInvite={email => invitarUsuarioAProyecto(proyectoInvitando.id, email)}
         />
       </div>
+
       </>
+
     )
   }

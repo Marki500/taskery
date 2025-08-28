@@ -7,6 +7,7 @@ import NavBar from '@/components/NavBar'
 import Login from './Login'
 import { getToken } from '@/lib/auth'
 
+
 export default function EmpresasPage() {
   const [empresas, setEmpresas] = useState([])
   const [open, setOpen] = useState(false)
