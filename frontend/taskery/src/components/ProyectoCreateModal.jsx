@@ -1,9 +1,9 @@
 // src/components/ProyectoCreateModal.jsx
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import BaseModal from './BaseModal'
-import { crearProyecto } from '@/services/proyectos'
+import { crearProyecto, editarProyecto } from '@/services/proyectos'
 
-export default function ProyectoCreateModal({ open, onClose, empresa, onCreated }) {
+export default function ProyectoCreateModal({ open, onClose, empresa, onCreated, initialData, onUpdated }) {
   const [nombre, setNombre] = useState('')
   const [horasMensuales, setHorasMensuales] = useState('')
   const [loading, setLoading] = useState(false)
@@ -11,6 +11,21 @@ export default function ProyectoCreateModal({ open, onClose, empresa, onCreated 
 
   const firstInputRef = useRef(null)
   const descId = 'proyecto-modal-desc'
+  const isEdit = Boolean(initialData?.id)
+
+  useEffect(() => {
+    if (open && initialData) {
+      setNombre(initialData.nombre || '')
+      setHorasMensuales(
+        initialData.horasMensuales !== undefined && initialData.horasMensuales !== null
+          ? String(initialData.horasMensuales)
+          : ''
+      )
+    } else if (open) {
+      setNombre('')
+      setHorasMensuales('')
+    }
+  }, [open, initialData])
 
   function resetAndClose() {
     setNombre('')
@@ -24,7 +39,7 @@ export default function ProyectoCreateModal({ open, onClose, empresa, onCreated 
     e.preventDefault()
     setError('')
 
-    if (!empresa?.id) {
+    if (!empresa?.id && !initialData?.empresaId) {
       setError('No hay empresa seleccionada')
       return
     }
@@ -42,16 +57,24 @@ export default function ProyectoCreateModal({ open, onClose, empresa, onCreated 
 
     try {
       setLoading(true)
-      const nuevo = await crearProyecto({
-        nombre: nombre.trim(),
-        empresaId: empresa.id,
-        horasMensuales: horas,
-      })
-      onCreated?.(nuevo)
+      if (isEdit) {
+        const actualizado = await editarProyecto(initialData.id, {
+          nombre: nombre.trim(),
+          horasMensuales: horas,
+        })
+        onUpdated?.(actualizado)
+      } else {
+        const nuevo = await crearProyecto({
+          nombre: nombre.trim(),
+          empresaId: empresa.id,
+          horasMensuales: horas,
+        })
+        onCreated?.(nuevo)
+      }
       resetAndClose()
     } catch (err) {
-      console.error('Error al crear proyecto', err)
-      const msg = err?.response?.data?.mensaje || err?.message || 'No se pudo crear el proyecto'
+      console.error(isEdit ? 'Error al editar proyecto' : 'Error al crear proyecto', err)
+      const msg = err?.response?.data?.mensaje || err?.message || 'No se pudo guardar el proyecto'
       setError(msg)
     } finally {
       setLoading(false)
@@ -62,12 +85,18 @@ export default function ProyectoCreateModal({ open, onClose, empresa, onCreated 
     <BaseModal
       open={open}
       onClose={resetAndClose}
-      title="Nuevo proyecto"
+      title={isEdit ? 'Editar proyecto' : 'Nuevo proyecto'}
       descriptionId={descId}
       initialFocusRef={firstInputRef}
     >
       <p id={descId} className="mt-1 text-sm text-white/70">
-        Crea un proyecto dentro de <span className="text-sky-200 font-medium">{empresa?.nombre || '—'}</span>.
+        {isEdit
+          ? 'Modifica los datos del proyecto.'
+          : 'Crea un proyecto dentro de '}
+        {!isEdit && (
+          <span className="text-sky-200 font-medium">{empresa?.nombre || '—'}</span>
+        )}
+        {!isEdit && '.'}
       </p>
 
       {error && (
@@ -121,7 +150,13 @@ export default function ProyectoCreateModal({ open, onClose, empresa, onCreated 
             disabled={loading}
             className="rounded-xl bg-sky-500 px-4 py-2 font-semibold text-white hover:bg-sky-600 disabled:opacity-50"
           >
-            {loading ? 'Creando…' : 'Crear proyecto'}
+            {loading
+              ? isEdit
+                ? 'Guardando…'
+                : 'Creando…'
+              : isEdit
+              ? 'Guardar cambios'
+              : 'Crear proyecto'}
           </button>
         </div>
       </form>

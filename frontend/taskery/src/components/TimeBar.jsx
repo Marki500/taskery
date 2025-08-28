@@ -9,9 +9,14 @@ function msToHMS(ms) {
   return `${h}:${m}:${ss}`;
 }
 
-export default function TimerBar() {
+export default function TimerBar({ onStop }) {
   const { active, runningForMs, stop } = useActiveTimer();
   if (!active) return null;
+
+  async function handleStop() {
+    await stop();
+    if (onStop) await onStop();
+  }
 
   return (
     <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50
@@ -24,7 +29,7 @@ export default function TimerBar() {
       </strong>
       <span className="font-mono tabular-nums">{msToHMS(runningForMs)}</span>
       <button
-        onClick={stop}
+        onClick={handleStop}
         className="ml-2 px-3 py-1 rounded-md bg-red-600 hover:bg-red-700 text-sm"
         title="Parar temporizador"
       >

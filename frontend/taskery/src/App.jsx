@@ -397,7 +397,7 @@ export default function App() {
       </div>
 
       {/* Barra global del temporizador */}
-      <TimeBar />
+      <TimeBar onStop={loadTareas} />
     </ActiveTimerProvider>
   );
 }

@@ -1,9 +1,9 @@
 // Modal de creación de empresa que usa BaseModal
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import BaseModal from './BaseModal'
-import { crearEmpresa } from '@/services/empresas'
+import { crearEmpresa, editarEmpresa } from '@/services/empresas'
 
-export default function EmpresaCreateModal({ open, onClose, onCreated }) {
+export default function EmpresaCreateModal({ open, onClose, onCreated, initialData, onUpdated }) {
   const [nombre, setNombre] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [loading, setLoading] = useState(false)
@@ -11,6 +11,17 @@ export default function EmpresaCreateModal({ open, onClose, onCreated }) {
 
   const firstInputRef = useRef(null)
   const descId = 'empresa-modal-desc'
+  const isEdit = Boolean(initialData?.id)
+
+  useEffect(() => {
+    if (open && initialData) {
+      setNombre(initialData.nombre || '')
+      setDescripcion(initialData.descripcion || '')
+    } else if (open) {
+      setNombre('')
+      setDescripcion('')
+    }
+  }, [open, initialData])
 
   function resetAndClose() {
     setNombre('')
@@ -32,15 +43,23 @@ export default function EmpresaCreateModal({ open, onClose, onCreated }) {
 
     try {
       setLoading(true)
-      const nueva = await crearEmpresa({
-        nombre: nombre.trim(),
-        descripcion: descripcion.trim() || undefined,
-      })
-      onCreated?.(nueva)
+      if (isEdit) {
+        const actualizada = await editarEmpresa(initialData.id, {
+          nombre: nombre.trim(),
+          descripcion: descripcion.trim() || undefined,
+        })
+        onUpdated?.(actualizada)
+      } else {
+        const nueva = await crearEmpresa({
+          nombre: nombre.trim(),
+          descripcion: descripcion.trim() || undefined,
+        })
+        onCreated?.(nueva)
+      }
       resetAndClose()
     } catch (err) {
-      console.error('Error al crear empresa', err)
-      const msg = err?.response?.data?.mensaje || err?.message || 'No se pudo crear la empresa'
+      console.error(isEdit ? 'Error al editar empresa' : 'Error al crear empresa', err)
+      const msg = err?.response?.data?.mensaje || err?.message || 'No se pudo guardar la empresa'
       setError(msg)
     } finally {
       setLoading(false)
@@ -51,12 +70,12 @@ export default function EmpresaCreateModal({ open, onClose, onCreated }) {
     <BaseModal
       open={open}
       onClose={resetAndClose}
-      title="Nueva empresa"
+      title={isEdit ? 'Editar empresa' : 'Nueva empresa'}
       descriptionId={descId}
       initialFocusRef={firstInputRef}
     >
       <p id={descId} className="mt-1 text-sm text-white/70">
-        Crea una empresa para agrupar proyectos y usuarios.
+        {isEdit ? 'Edita los datos de la empresa.' : 'Crea una empresa para agrupar proyectos y usuarios.'}
       </p>
 
       {error && (
@@ -109,7 +128,7 @@ export default function EmpresaCreateModal({ open, onClose, onCreated }) {
             disabled={loading}
             className="rounded-xl bg-sky-500 px-4 py-2 font-semibold text-white hover:bg-sky-600 disabled:opacity-50"
           >
-            {loading ? 'Creando…' : 'Crear empresa'}
+            {loading ? (isEdit ? 'Guardando…' : 'Creando…') : isEdit ? 'Guardar cambios' : 'Crear empresa'}
           </button>
         </div>
       </form>
