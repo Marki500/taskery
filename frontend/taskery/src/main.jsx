@@ -13,10 +13,12 @@ let pageProps = {}
 if (path.startsWith('/empresas')) {
   Page = EmpresasPage
 } else if (path.startsWith('/proyectos')) {
-  Page = ProyectosPage
-  const parts = path.split('/')
-  if (parts.length > 2) {
-    pageProps.empresaId = parts[2]
+  const parts = path.split('/').filter(Boolean)
+  if (parts.length > 1) {
+    Page = ProyectosPage
+    pageProps.empresaId = parts[1]
+  } else {
+    window.location.href = '/empresas'
   }
 }
 
