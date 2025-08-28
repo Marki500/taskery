@@ -3,6 +3,10 @@ import React, { useEffect, useState } from 'react'
 import { listarMisEmpresas, invitarUsuarioAEmpresa } from '@/services/empresas'
 import EmpresaModal from '@/components/EmpresaModal'
 import InviteModal from '@/components/InviteModal'
+import NavBar from '@/components/NavBar'
+import Login from './Login'
+import { getToken } from '@/lib/auth'
+
 
 export default function EmpresasPage() {
   const [empresas, setEmpresas] = useState([])
@@ -17,7 +21,11 @@ export default function EmpresasPage() {
   }
   useEffect(() => { load() }, [])
 
+  if (!getToken()) return <Login />
+
   return (
+    <>
+    <NavBar />
     <div className="p-4">
       <div className="flex justify-between mb-3">
         <h1 className="text-xl text-sky-200">Empresas</h1>
@@ -78,5 +86,6 @@ export default function EmpresasPage() {
         onInvite={email => invitarUsuarioAEmpresa(empresaInvitando.id, email)}
       />
     </div>
+    </>
   )
 }

@@ -4,6 +4,9 @@ import { listarProyectosPorEmpresa, listarProyectos, invitarUsuarioAProyecto } f
 import ProyectoModal from '@/components/ProyectoModal'
 import InviteModal from '@/components/InviteModal'
 import { Pencil } from 'lucide-react'
+import NavBar from '@/components/NavBar'
+import Login from './Login'
+import { getToken } from '@/lib/auth'
 
 export default function ProyectosPage({ empresaId }) {
   const [proyectos, setProyectos] = useState([])
@@ -18,7 +21,13 @@ export default function ProyectosPage({ empresaId }) {
   }
   useEffect(() => { load() }, [empresaId])
 
+
+  if (!getToken()) return <Login />
+
+
   return (
+    <>
+    <NavBar />
     <div className="p-4">
         <div className="flex justify-between mb-3">
           <h1 className="text-xl text-sky-200">Proyectos</h1>
@@ -82,5 +91,8 @@ export default function ProyectosPage({ empresaId }) {
           onInvite={email => invitarUsuarioAProyecto(proyectoInvitando.id, email)}
         />
       </div>
+
+      </>
+
     )
   }
