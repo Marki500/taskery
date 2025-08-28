@@ -249,6 +249,38 @@ async function editarTarea(req, res) {
   }
 }
 
+// Eliminar tarea
+async function eliminarTarea(req, res) {
+  try {
+    const { id } = req.params
+    const tareaId = Number(id)
+    if (!tareaId) return res.status(400).json({ error: 'id inválido' })
+
+    const tarea = await prisma.tarea.findUnique({
+      where: { id: tareaId },
+      select: { id: true, proyecto: { select: { empresaId: true } } },
+    })
+    if (!tarea) return res.status(404).json({ error: 'Tarea no encontrada' })
+
+    const pertenece = await prisma.empresa.findFirst({
+      where: {
+        id: tarea.proyecto.empresaId,
+        usuarios: { some: { id: req.usuario.id } },
+      },
+      select: { id: true },
+    })
+    if (!pertenece) {
+      return res.status(403).json({ error: 'No tienes acceso a esta tarea' })
+    }
+
+    await prisma.tarea.delete({ where: { id: tareaId } })
+    return res.json({ ok: true })
+  } catch (error) {
+    console.error('[eliminarTarea] Error:', error)
+    return res.status(500).json({ error: 'Error al eliminar tarea' })
+  }
+}
+
 
 
 // PATCH /tareas/ordenar
@@ -300,4 +332,5 @@ module.exports = {
   listarTareasPorProyecto,
   editarTarea,
   reordenarTareas,
+  eliminarTarea,
 }

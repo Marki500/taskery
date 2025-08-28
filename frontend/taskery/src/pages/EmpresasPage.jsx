@@ -1,6 +1,6 @@
 // src/pages/EmpresasPage.jsx
 import React, { useEffect, useState } from 'react';
-import { listarMisEmpresas } from '@/services/empresas';
+import { listarMisEmpresas, eliminarEmpresa } from '@/services/empresas';
 import EmpresaCreateModal from '@/components/EmpresaCreateModal';
 import Navbar from '@/components/Navbar';
 import { ActiveTimerProvider } from '@/context/ActiveTimerContext';
@@ -69,15 +69,27 @@ export default function EmpresasPage() {
                     <div className="text-slate-300/80 text-sm">{e.descripcion}</div>
                   )}
                 </div>
-                <button
-                  onClick={() => {
-                    setEditing(e);
-                    setOpen(true);
-                  }}
-                  className="text-xs px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10"
-                >
-                  Editar
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setEditing(e);
+                      setOpen(true);
+                    }}
+                    className="text-xs px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!window.confirm('¿Eliminar empresa?')) return;
+                      await eliminarEmpresa(e.id);
+                      load();
+                    }}
+                    className="text-xs px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 border border-white/10"
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

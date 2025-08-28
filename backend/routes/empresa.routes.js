@@ -17,6 +17,9 @@ router.put('/:id', verificarToken, empresaController.editarEmpresa);
 // GET /empresas/:id  -> Devuelve la empresa, sus proyectos y usuarios
 router.get('/:id', verificarToken, empresaController.obtenerEmpresaPorId);
 
+// Eliminar empresa
+router.delete('/:id', verificarToken, empresaController.eliminarEmpresa);
+
 // Exportamos este router para poder usarlo en index.js
 module.exports = router;
 

@@ -20,3 +20,8 @@ export async function editarEmpresa(id, payload) {
   const { data } = await api.put(`/empresas/${id}`, payload);
   return data;
 }
+
+export async function eliminarEmpresa(id) {
+  const { data } = await api.delete(`/empresas/${id}`);
+  return data;
+}
