@@ -1,4 +1,6 @@
 // components/Sidebar/Sidebar.jsx
+import { useState } from "react"
+
 export default function Sidebar({
   empresas = [],
   selectedEmpresa,
@@ -9,6 +11,11 @@ export default function Sidebar({
   onNuevaEmpresa,
   onNuevoProyecto, // ← NUEVO
 }) {
+  const [projectSearch, setProjectSearch] = useState("")
+  const filteredProyectos = proyectos.filter((p) =>
+    p.nombre.toLowerCase().includes(projectSearch.toLowerCase())
+  )
+
   return (
     <aside className="w-72 bg-white/5 backdrop-blur border border-white/10 shadow-[0_10px_40px_-20px_rgba(59,162,237,0.25)] flex flex-col p-6">
       {/* Empresa selector */}
@@ -60,8 +67,15 @@ export default function Sidebar({
             </button>
           )}
         </div>
+        <input
+          type="text"
+          placeholder="Buscar proyectos..."
+          value={projectSearch}
+          onChange={(e) => setProjectSearch(e.target.value)}
+          className="w-full mb-2 px-3 py-1 text-sm rounded-lg bg-white/10 border border-white/10 placeholder-slate-400/80 focus:outline-none"
+        />
         <ul className="space-y-1.5">
-          {proyectos.map((proy) => {
+          {filteredProyectos.map((proy) => {
             const isActive = selectedProyecto && proy.id === selectedProyecto.id
             return (
               <li
@@ -77,7 +91,7 @@ export default function Sidebar({
               </li>
             )
           })}
-          {proyectos.length === 0 && (
+          {filteredProyectos.length === 0 && (
             <li className="text-xs text-slate-400/80">No hay proyectos.</li>
           )}
         </ul>

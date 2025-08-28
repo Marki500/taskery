@@ -273,6 +273,9 @@ async function eliminarTarea(req, res) {
       return res.status(403).json({ error: 'No tienes acceso a esta tarea' })
     }
 
+    // Elimina timers relacionados para evitar violaciones de FK
+    await prisma.timer.deleteMany({ where: { tareaId } })
+
     await prisma.tarea.delete({ where: { id: tareaId } })
     return res.json({ ok: true })
   } catch (error) {
