@@ -42,7 +42,7 @@ export function ActiveTimerProvider({ children, refreshMs = 15000 }) {
       try {
         const a = await getActiveTimer();
         setActive(a);
-      } catch {}
+      } catch { /* empty */ }
     }, refreshMs);
     return () => clearInterval(id);
   }, [refreshMs]);
@@ -57,8 +57,9 @@ export function ActiveTimerProvider({ children, refreshMs = 15000 }) {
       try {
         const a = await getActiveTimer();
         setActive(a);
-      } catch {}
-      throw e;
+      } catch { /* empty */ }
+      console.error('startTimer:', e);
+      return { error: e };
     }
   }
 
@@ -76,6 +77,7 @@ export function ActiveTimerProvider({ children, refreshMs = 15000 }) {
   );
 }
 
+/* eslint-disable-next-line react-refresh/only-export-components */
 export function useActiveTimer() {
   const ctx = useContext(ActiveTimerContext);
   if (!ctx) throw new Error('useActiveTimer debe usarse dentro de <ActiveTimerProvider>');

@@ -108,9 +108,12 @@ function TareaCardSortable({ tarea, onEdit, activeTareaId, startTimer, stopTimer
             {!activeTareaId && (
               <button
                 onMouseDown={stopDnd}
-                onClick={(e) => {
+                onClick={async (e) => {
                   stopDnd(e);
-                  startTimer(tarea.id);
+                  const r = await startTimer(tarea.id);
+                  if (r?.error) {
+                    alert(r.error?.response?.data?.error || r.error.message || 'No se pudo iniciar temporizador');
+                  }
                 }}
                 className="p-1.5 rounded bg-emerald-600/20 hover:bg-emerald-600/30"
                 title="Iniciar temporizador"
@@ -122,9 +125,12 @@ function TareaCardSortable({ tarea, onEdit, activeTareaId, startTimer, stopTimer
             {activeTareaId && !esActiva && (
               <button
                 onMouseDown={stopDnd}
-                onClick={(e) => {
+                onClick={async (e) => {
                   stopDnd(e);
-                  startTimer(tarea.id); // switch atómico en backend
+                  const r = await startTimer(tarea.id); // switch atómico en backend
+                  if (r?.error) {
+                    alert(r.error?.response?.data?.error || r.error.message || 'No se pudo iniciar temporizador');
+                  }
                 }}
                 className="p-1.5 rounded bg-sky-600/20 hover:bg-sky-600/30"
                 title="Cambiar a esta tarea"
@@ -238,7 +244,7 @@ export default function KanbanBoardDnd({
   }, [tareas]);
 
   const [activeId, setActiveId] = useState(null);
-  const [overId, setOverId] = useState(null);
+  const [, setOverId] = useState(null);
   const [insertion, setInsertion] = useState({ to: null, index: -1 });
 
   // Estado para edición (modal)
