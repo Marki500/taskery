@@ -11,10 +11,6 @@ export default function Sidebar({
 }) {
   return (
     <aside className="w-72 bg-white/5 backdrop-blur border border-white/10 shadow-[0_10px_40px_-20px_rgba(59,162,237,0.25)] flex flex-col p-6">
-      <div className="mb-6 flex items-center gap-2">
-        <img src="/Taskery-logo.webp" alt="Taskery Logo" />
-      </div>
-
       {/* Empresa selector */}
       <div className="mb-4">
         <label className="block text-xs text-slate-300/80 mb-1">Empresa</label>
