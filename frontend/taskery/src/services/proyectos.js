@@ -15,3 +15,8 @@ export async function editarProyecto(id, payload) {
   const { data } = await api.put(`/proyectos/${id}`, payload);
   return data;
 }
+
+export async function eliminarProyecto(id) {
+  const { data } = await api.delete(`/proyectos/${id}`);
+  return data;
+}

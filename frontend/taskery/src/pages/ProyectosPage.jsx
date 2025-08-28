@@ -1,6 +1,6 @@
 // src/pages/ProyectosPage.jsx
 import React, { useEffect, useState, useCallback } from 'react';
-import { listarProyectosPorEmpresa } from '@/services/proyectos';
+import { listarProyectosPorEmpresa, eliminarProyecto } from '@/services/proyectos';
 import { listarMisEmpresas } from '@/services/empresas';
 import ProyectoCreateModal from '@/components/ProyectoCreateModal';
 import Navbar from '@/components/Navbar';
@@ -13,6 +13,7 @@ export default function ProyectosPage({ empresaId: initialEmpresaId }) {
   const [empresas, setEmpresas] = useState([]);
   const [empresaId, setEmpresaId] = useState(initialEmpresaId || '');
   const [proyectos, setProyectos] = useState([]);
+  const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [usuario, setUsuario] = useState(null);
@@ -111,8 +112,19 @@ export default function ProyectosPage({ empresaId: initialEmpresaId }) {
             </button>
           </div>
 
+          <div className="mb-3">
+            <input
+              type="text"
+              placeholder="Buscar proyectos..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full mb-2 px-2 py-1 rounded-lg bg-slate-800 text-white"
+            />
+          </div>
           <ul className="space-y-2">
-            {proyectos.map((p) => (
+            {proyectos
+              .filter((p) => p.nombre.toLowerCase().includes(query.toLowerCase()))
+              .map((p) => (
               <li
                 key={p.id}
                 className="p-3 rounded-xl bg-slate-800 border border-white/10 flex justify-between items-center"
@@ -123,17 +135,29 @@ export default function ProyectosPage({ empresaId: initialEmpresaId }) {
                     <div className="text-slate-300/80 text-sm">{p.descripcion}</div>
                   )}
                 </div>
-                <button
-                  onClick={() => {
-                    setEditing(p);
-                    setOpen(true);
-                  }}
-                  className="text-xs px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10"
-                >
-                  Editar
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setEditing(p);
+                      setOpen(true);
+                    }}
+                    className="text-xs px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!window.confirm('¿Eliminar proyecto?')) return;
+                      await eliminarProyecto(p.id);
+                      load();
+                    }}
+                    className="text-xs px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 border border-white/10"
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </li>
-            ))}
+              ))}
           </ul>
         </main>
 

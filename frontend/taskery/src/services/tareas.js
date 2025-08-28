@@ -80,6 +80,11 @@ export async function reordenarTareas(proyectoId, estado, idsOrdenados) {
   return data
 }
 
+export async function eliminarTarea(id) {
+  const { data } = await api.delete(`/tareas/${id}`)
+  return data
+}
+
 /**
  * (Opcional) Mover una tarea entre columnas y reordenar ambas listas.
  * Útil si quieres orquestarlo desde aquí en lugar de App.jsx

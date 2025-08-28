@@ -18,7 +18,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Pencil, Play, Square } from "lucide-react";
+import { Pencil, Play, Square, Trash } from "lucide-react";
 import TareaCreateModal from "@/components/TareaCreateModal";
 
 // 👇 IMPORTA EL CONTEXTO DEL TIMER
@@ -58,7 +58,7 @@ function msToHMS(ms) {
   return `${h}:${m}:${ss}`;
 }
 
-function TareaCardSortable({ tarea, onEdit, activeTareaId, startTimer, stopTimer }) {
+function TareaCardSortable({ tarea, onEdit, activeTareaId, startTimer, stopTimer, onDelete }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: String(tarea.id) });
 
@@ -179,6 +179,17 @@ function TareaCardSortable({ tarea, onEdit, activeTareaId, startTimer, stopTimer
             >
               <Pencil className="w-4 h-4 text-slate-300" />
             </button>
+            <button
+              onMouseDown={stopDnd}
+              onClick={(e) => {
+                stopDnd(e);
+                onDelete?.(tarea);
+              }}
+              className="p-1 rounded hover:bg-slate-700 text-red-400"
+              title="Eliminar tarea"
+            >
+              <Trash className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}
@@ -238,6 +249,7 @@ export default function KanbanBoardDnd({
   onReorderSameColumn, // (col, idsOrdenados)
   onMoveToColumn, // (tareaId, toCol, idsTarget, idsSource)
   onAfterSave, // opcional: refrescar tras guardar en el modal
+  onDelete,
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -423,10 +435,13 @@ export default function KanbanBoardDnd({
                               onAfterSave?.();
                             }}
                             onEdit={(task) => {
-                              setEditing(task);
-                              setEditOpen(true);
-                            }}
-                          />
+                          setEditing(task);
+                          setEditOpen(true);
+                        }}
+                        onDelete={(task) => {
+                          onDelete?.(task);
+                        }}
+                      />
                         </React.Fragment>
                       ))}
 

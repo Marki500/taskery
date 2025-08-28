@@ -16,6 +16,9 @@ router.post('/', tareaController.crearTarea);
 // Ahora acepta nombre, descripcion, estado y prioridad
 router.put('/:id', tareaController.editarTarea);
 
+// Eliminar tarea
+router.delete('/:id', tareaController.eliminarTarea);
+
 // GET /tareas/:proyectoId -> Lista tareas del proyecto
 // Usamos la función desde el controlador
 router.get('/:proyectoId', tareaController.listarTareasPorProyecto)

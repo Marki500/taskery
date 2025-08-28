@@ -141,8 +141,41 @@ async function listarEmpresasDelUsuario(req, res) {
   }
 }
 
+/**
+ * DELETE /empresas/:id
+ * Elimina una empresa si el usuario autenticado pertenece a ella.
+ */
+async function eliminarEmpresa(req, res) {
+  const { id } = req.params
+
+  try {
+    const empresaId = Number(id)
+    if (!empresaId) return res.status(400).json({ error: 'id inválido' })
+
+    // Verificar que el usuario pertenece a la empresa
+    const pertenece = await prisma.empresa.findFirst({
+      where: {
+        id: empresaId,
+        usuarios: { some: { id: req.usuario.id } },
+      },
+      select: { id: true },
+    })
+
+    if (!pertenece) {
+      return res.status(403).json({ error: 'No tienes acceso a esta empresa' })
+    }
+
+    await prisma.empresa.delete({ where: { id: empresaId } })
+    return res.json({ ok: true })
+  } catch (error) {
+    console.error('[eliminarEmpresa] Error:', error)
+    return res.status(500).json({ error: 'Error al eliminar empresa' })
+  }
+}
+
 // Exporta cada función como propiedad del objeto exports
 exports.crearEmpresa = crearEmpresa
 exports.editarEmpresa = editarEmpresa
 exports.obtenerEmpresaPorId = obtenerEmpresaPorId
 exports.listarEmpresasDelUsuario = listarEmpresasDelUsuario
+exports.eliminarEmpresa = eliminarEmpresa

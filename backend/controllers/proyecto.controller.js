@@ -174,5 +174,43 @@ async function editarProyecto(req, res) {
   }
 }
 
+/**
+ * DELETE /proyectos/:id
+ * Elimina un proyecto si el usuario pertenece a la empresa del proyecto.
+ */
+async function eliminarProyecto(req, res) {
+  const { id } = req.params
+  const usuarioId = req.usuario?.id
 
-module.exports = { crearProyecto, listarProyectosPorEmpresa, editarProyecto }
+  try {
+    const proyectoId = Number(id)
+    if (!proyectoId) return res.status(400).json({ error: 'id inválido' })
+
+    const proyecto = await prisma.proyecto.findUnique({
+      where: { id: proyectoId },
+      select: { id: true, empresaId: true },
+    })
+    if (!proyecto) return res.status(404).json({ error: 'Proyecto no encontrado' })
+
+    // Autorizar
+    const pertenece = await prisma.empresa.findFirst({
+      where: {
+        id: proyecto.empresaId,
+        usuarios: { some: { id: Number(usuarioId) } },
+      },
+      select: { id: true },
+    })
+    if (!pertenece) {
+      return res.status(403).json({ error: 'No tienes acceso a este proyecto' })
+    }
+
+    await prisma.proyecto.delete({ where: { id: proyectoId } })
+    return res.json({ ok: true })
+  } catch (error) {
+    console.error('[eliminarProyecto] Error:', error)
+    return res.status(500).json({ error: 'Error al eliminar proyecto' })
+  }
+}
+
+
+module.exports = { crearProyecto, listarProyectosPorEmpresa, editarProyecto, eliminarProyecto }

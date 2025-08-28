@@ -11,7 +11,7 @@ import { getToken, pickTokenFromURL, clearToken, getInviteToken, clearInviteToke
 
 // ✅ Importa el board con dnd-kit
 import KanbanBoardDnd from "./components/KanbanBoardDnd";
-import { actualizarEstadoTarea, reordenarTareas } from "./services/tareas";
+import { actualizarEstadoTarea, reordenarTareas, eliminarTarea } from "./services/tareas";
 import { getTimersByTask } from "./services/timers";
 
 // ✅ NUEVO: Contexto del timer + barra
@@ -358,6 +358,11 @@ export default function App() {
                     // Asegura consistencia final desde el backend
                     await loadTareas();
                   }
+                }}
+                onDelete={async (task) => {
+                  if (!window.confirm("¿Eliminar tarea?")) return;
+                  await eliminarTarea(task.id);
+                  await loadTareas();
                 }}
               />
             )}
