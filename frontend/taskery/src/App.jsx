@@ -152,8 +152,7 @@ export default function App() {
 
   return (
     <ActiveTimerProvider>
-      <NavBar onLogout={handleLogout} />
-      <div className="min-h-screen flex bg-neutral-950 text-white">
+      <div className="min-h-screen bg-neutral-950 text-white relative">
         {/* Fondo */}
         <div
           className="absolute inset-0 -z-10"
@@ -163,145 +162,149 @@ export default function App() {
           }}
         />
 
-        {/* Sidebar */}
-        <Sidebar
-          empresas={empresas}
-          selectedEmpresa={selectedEmpresa}
-          onSelectEmpresa={(em) => setSelectedEmpresa(em)}
-          proyectos={proyectos}
-          selectedProyecto={selectedProyecto}
-          onSelectProyecto={(proy) => setSelectedProyecto(proy)}
-          onNuevaEmpresa={() => setShowCreateEmpresa(true)}
-          onNuevoProyecto={() => setShowCreateProyecto(true)}
-        />
+        <NavBar onLogout={handleLogout} />
 
-        {/* Área principal: tareas */}
-        <main className="flex-1 p-10">
-          <header className="mb-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-sky-300">
-                {selectedProyecto
-                  ? selectedProyecto.nombre
-                  : selectedEmpresa
-                  ? `Proyectos de ${selectedEmpresa.nombre}`
-                  : "Selecciona una empresa"}
-              </h1>
-              {selectedEmpresa && (
-                <p className="text-sm text-slate-300/80 mt-1">
-                  Empresa: <span className="text-sky-200">{selectedEmpresa.nombre}</span>
-                </p>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              {selectedProyecto && (
-                <button
-                  onClick={() => setShowCreateTarea(true)}
-                  className="text-xs px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-600 font-semibold"
-                >
-                  + Nueva tarea
-                </button>
-              )}
-              {(loading || loadingTareas) && (
-                <span className="text-xs text-slate-300/80">Cargando…</span>
-              )}
-              {error && (
-                <span className="text-xs px-2 py-1 rounded bg-red-400/20 text-red-200 border border-red-400/30">
-                  {error}
-                </span>
-              )}
-            </div>
-          </header>
+        <div className="flex">
+          {/* Sidebar */}
+          <Sidebar
+            empresas={empresas}
+            selectedEmpresa={selectedEmpresa}
+            onSelectEmpresa={(em) => setSelectedEmpresa(em)}
+            proyectos={proyectos}
+            selectedProyecto={selectedProyecto}
+            onSelectProyecto={(proy) => setSelectedProyecto(proy)}
+            onNuevaEmpresa={() => setShowCreateEmpresa(true)}
+            onNuevoProyecto={() => setShowCreateProyecto(true)}
+          />
 
-          {/* Kanban de tareas (3 columnas con Drag & Drop) */}
-          <section>
-            <h2 className="text-sm font-medium text-slate-300/80 mb-3">Tareas</h2>
-            {!selectedProyecto && (
-              <div className="text-sm text-slate-400/80">
-                Selecciona un proyecto para ver sus tareas.
+          {/* Área principal: tareas */}
+          <main className="flex-1 p-10">
+            <header className="mb-6 flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-semibold text-sky-300">
+                  {selectedProyecto
+                    ? selectedProyecto.nombre
+                    : selectedEmpresa
+                    ? `Proyectos de ${selectedEmpresa.nombre}`
+                    : "Selecciona una empresa"}
+                </h1>
+                {selectedEmpresa && (
+                  <p className="text-sm text-slate-300/80 mt-1">
+                    Empresa: <span className="text-sky-200">{selectedEmpresa.nombre}</span>
+                  </p>
+                )}
               </div>
-            )}
+              <div className="flex items-center gap-3">
+                {selectedProyecto && (
+                  <button
+                    onClick={() => setShowCreateTarea(true)}
+                    className="text-xs px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-600 font-semibold"
+                  >
+                    + Nueva tarea
+                  </button>
+                )}
+                {(loading || loadingTareas) && (
+                  <span className="text-xs text-slate-300/80">Cargando…</span>
+                )}
+                {error && (
+                  <span className="text-xs px-2 py-1 rounded bg-red-400/20 text-red-200 border border-red-400/30">
+                    {error}
+                  </span>
+                )}
+              </div>
+            </header>
 
-            {selectedProyecto && (
-              <KanbanBoardDnd
-                tareas={tareas}
-                loading={loading || loadingTareas}
-                onAfterSave={loadTareas}
-                onTimerStopped={loadTareas}
-                onReorderSameColumn={async (col, idsOrdenados) => {
-                  // Normaliza estado igual que el board
-                  const norm = (e) => {
-                    const s = String(e || "").toLowerCase();
-                    if (s.startsWith("en")) return "en_progreso";
-                    if (s.startsWith("comp")) return "completada";
-                    return "pendiente";
-                  };
+            {/* Kanban de tareas (3 columnas con Drag & Drop) */}
+            <section>
+              <h2 className="text-sm font-medium text-slate-300/80 mb-3">Tareas</h2>
+              {!selectedProyecto && (
+                <div className="text-sm text-slate-400/80">
+                  Selecciona un proyecto para ver sus tareas.
+                </div>
+              )}
 
-                  // Optimista en UI: reordena solo esa columna
-                  setTareas((prev) => {
-                    const byId = Object.fromEntries(prev.map((t) => [t.id, t]));
-                    const inColSet = new Set(
-                      prev.filter((t) => norm(t.estado) === col).map((t) => t.id)
-                    );
-                    const otros = prev.filter((t) => !inColSet.has(t.id));
-                    const reordenados = idsOrdenados.map((id) => byId[id]).filter(Boolean);
-                    return [...otros, ...reordenados];
-                  });
+              {selectedProyecto && (
+                <KanbanBoardDnd
+                  tareas={tareas}
+                  loading={loading || loadingTareas}
+                  onAfterSave={loadTareas}
+                  onTimerStopped={loadTareas}
+                  onReorderSameColumn={async (col, idsOrdenados) => {
+                    // Normaliza estado igual que el board
+                    const norm = (e) => {
+                      const s = String(e || "").toLowerCase();
+                      if (s.startsWith("en")) return "en_progreso";
+                      if (s.startsWith("comp")) return "completada";
+                      return "pendiente";
+                    };
 
-                  try {
-                    await reordenarTareas(selectedProyecto.id, col, idsOrdenados);
-                  } catch (e) {
-                    console.error("Fallo reordenando", e);
-                    await loadTareas(); // recupera estado del servidor
-                  } finally {
-                    // Garantiza consistencia
-                    await loadTareas();
-                  }
-                }}
-                onMoveToColumn={async (tareaId, toCol, targetIds, sourceIds) => {
-                  const to = toCol; // 'pendiente' | 'en_progreso' | 'completada'
+                    // Optimista en UI: reordena solo esa columna
+                    setTareas((prev) => {
+                      const byId = Object.fromEntries(prev.map((t) => [t.id, t]));
+                      const inColSet = new Set(
+                        prev.filter((t) => norm(t.estado) === col).map((t) => t.id)
+                      );
+                      const otros = prev.filter((t) => !inColSet.has(t.id));
+                      const reordenados = idsOrdenados.map((id) => byId[id]).filter(Boolean);
+                      return [...otros, ...reordenados];
+                    });
 
-                  // Optimista en UI: cambia estado y aplica orden en ambas columnas
-                  setTareas((prev) => {
-                    const byId = Object.fromEntries(prev.map((t) => [t.id, t]));
-                    const targetTasks = targetIds.map((id) => ({ ...byId[id], estado: to }));
-                    const sourceTasks = sourceIds.map((id) => byId[id]); // mantiene estado de origen
-                    const keep = prev.filter(
-                      (t) =>
-                        !targetIds.includes(t.id) &&
-                        !sourceIds.includes(t.id) &&
-                        String(t.id) !== String(tareaId)
-                    );
-                    return [...keep, ...sourceTasks, ...targetTasks];
-                  });
-
-                  try {
-                    // 1) Cambia estado del ítem movido
-                    await actualizarEstadoTarea(Number(tareaId), to);
-                    // 2) Persiste orden en destino
-                    await reordenarTareas(selectedProyecto.id, to, targetIds);
-                    // 3) Persiste orden en origen
-                    const movedPrev = tareas.find((t) => t.id === Number(tareaId));
-                    if (movedPrev) {
-                      const s = String(movedPrev.estado || "").toLowerCase();
-                      const fromCol =
-                        s.startsWith("en")
-                          ? "en_progreso"
-                          : s.startsWith("comp")
-                          ? "completada"
-                          : "pendiente";
-                      await reordenarTareas(selectedProyecto.id, fromCol, sourceIds);
+                    try {
+                      await reordenarTareas(selectedProyecto.id, col, idsOrdenados);
+                    } catch (e) {
+                      console.error("Fallo reordenando", e);
+                      await loadTareas(); // recupera estado del servidor
+                    } finally {
+                      // Garantiza consistencia
+                      await loadTareas();
                     }
-                  } catch (e) {
-                    console.error("Fallo moviendo/reordenando", e);
-                  } finally {
-                    // Asegura consistencia final desde el backend
-                    await loadTareas();
-                  }
-                }}
-              />
-            )}
-          </section>
-        </main>
+                  }}
+                  onMoveToColumn={async (tareaId, toCol, targetIds, sourceIds) => {
+                    const to = toCol; // 'pendiente' | 'en_progreso' | 'completada'
+
+                    // Optimista en UI: cambia estado y aplica orden en ambas columnas
+                    setTareas((prev) => {
+                      const byId = Object.fromEntries(prev.map((t) => [t.id, t]));
+                      const targetTasks = targetIds.map((id) => ({ ...byId[id], estado: to }));
+                      const sourceTasks = sourceIds.map((id) => byId[id]); // mantiene estado de origen
+                      const keep = prev.filter(
+                        (t) =>
+                          !targetIds.includes(t.id) &&
+                          !sourceIds.includes(t.id) &&
+                          String(t.id) !== String(tareaId)
+                      );
+                      return [...keep, ...sourceTasks, ...targetTasks];
+                    });
+
+                    try {
+                      // 1) Cambia estado del ítem movido
+                      await actualizarEstadoTarea(Number(tareaId), to);
+                      // 2) Persiste orden en destino
+                      await reordenarTareas(selectedProyecto.id, to, targetIds);
+                      // 3) Persiste orden en origen
+                      const movedPrev = tareas.find((t) => t.id === Number(tareaId));
+                      if (movedPrev) {
+                        const s = String(movedPrev.estado || "").toLowerCase();
+                        const fromCol =
+                          s.startsWith("en")
+                            ? "en_progreso"
+                            : s.startsWith("comp")
+                            ? "completada"
+                            : "pendiente";
+                        await reordenarTareas(selectedProyecto.id, fromCol, sourceIds);
+                      }
+                    } catch (e) {
+                      console.error("Fallo moviendo/reordenando", e);
+                    } finally {
+                      // Asegura consistencia final desde el backend
+                      await loadTareas();
+                    }
+                  }}
+                />
+              )}
+            </section>
+          </main>
+        </div>
 
         {/* Modales */}
         <EmpresaCreateModal
@@ -334,10 +337,10 @@ export default function App() {
             setTareas((prev) => [{ ...nueva, totalMs: 0 }, ...prev]);
           }}
         />
-      </div>
 
-      {/* Barra global del temporizador */}
-      <TimeBar onStopped={loadTareas} />
+        {/* Barra global del temporizador */}
+        <TimeBar onStopped={loadTareas} />
+      </div>
     </ActiveTimerProvider>
   );
 }
