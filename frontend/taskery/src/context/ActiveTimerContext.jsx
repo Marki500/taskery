@@ -6,6 +6,7 @@ const ActiveTimerContext = createContext(null);
 export function ActiveTimerProvider({ children, refreshMs = 15000 }) {
   const [active, setActive] = useState(null);      // timer activo o null
   const [runningForMs, setRunningForMs] = useState(0);
+  const [clockOffsetMs, setClockOffsetMs] = useState(0);
   const tickRef = useRef(null);
 
   // Cargar el activo al montar
@@ -13,6 +14,11 @@ export function ActiveTimerProvider({ children, refreshMs = 15000 }) {
     (async () => {
       try {
         const a = await getActiveTimer();
+        if (a?.inicio) {
+          setClockOffsetMs(Date.now() - Date.parse(a.inicio));
+        } else {
+          setClockOffsetMs(0);
+        }
         setActive(a);
       } catch (e) {
         console.error('getActiveTimer:', e);
@@ -25,22 +31,28 @@ export function ActiveTimerProvider({ children, refreshMs = 15000 }) {
     if (active?.inicio) {
       const started = new Date(active.inicio).getTime();
       clearInterval(tickRef.current);
-      setRunningForMs(Date.now() - started);
+      const compute = () => Date.now() - started - clockOffsetMs;
+      setRunningForMs(compute());
       tickRef.current = setInterval(() => {
-        setRunningForMs(Date.now() - started);
+        setRunningForMs(compute());
       }, 1000);
       return () => clearInterval(tickRef.current);
     } else {
       clearInterval(tickRef.current);
       setRunningForMs(0);
     }
-  }, [active?.id, active?.inicio]);
+  }, [active?.id, active?.inicio, clockOffsetMs]);
 
   // Auto-refresh para sincronizar multi-pestaña
   useEffect(() => {
     const id = setInterval(async () => {
       try {
         const a = await getActiveTimer();
+        if (a?.inicio) {
+          setClockOffsetMs(Date.now() - Date.parse(a.inicio));
+        } else {
+          setClockOffsetMs(0);
+        }
         setActive(a);
       } catch { /* empty */ }
     }, refreshMs);
@@ -50,12 +62,18 @@ export function ActiveTimerProvider({ children, refreshMs = 15000 }) {
   async function start(tareaId, note) {
     try {
       const res = await startTimer(tareaId, note);
+      setClockOffsetMs(Date.now() - Date.parse(res.newTimer.inicio));
       setActive(res.newTimer);
       return res;
     } catch (e) {
       // si el backend devuelve 409 por carrera, sincroniza
       try {
         const a = await getActiveTimer();
+        if (a?.inicio) {
+          setClockOffsetMs(Date.now() - Date.parse(a.inicio));
+        } else {
+          setClockOffsetMs(0);
+        }
         setActive(a);
       } catch { /* empty */ }
       console.error('startTimer:', e);
@@ -66,6 +84,7 @@ export function ActiveTimerProvider({ children, refreshMs = 15000 }) {
   async function stop() {
     await stopTimer();
     setActive(null);
+    setClockOffsetMs(0);
   }
 
   const value = useMemo(() => ({ active, runningForMs, start, stop }), [active, runningForMs]);
