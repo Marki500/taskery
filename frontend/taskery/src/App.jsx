@@ -12,6 +12,7 @@ import { getToken, pickTokenFromURL, clearToken } from "./lib/auth";
 // ✅ Importa el board con dnd-kit
 import KanbanBoardDnd from "./components/KanbanBoardDnd";
 import { actualizarEstadoTarea, reordenarTareas } from "./services/tareas";
+import { getTimersByTask } from "./services/timers";
 
 // ✅ NUEVO: Contexto del timer + barra
 import { ActiveTimerProvider } from "./context/ActiveTimerContext";
@@ -101,7 +102,21 @@ export default function App() {
     setError("");
     try {
       const res = await api.get(`/tareas/${selectedProyecto.id}`);
-      setTareas(res.data || []);
+      const list = res.data || [];
+      const withTime = await Promise.all(
+        list.map(async (t) => {
+          try {
+            const timers = await getTimersByTask(t.id);
+            const totalMs = timers
+              .filter((tm) => tm.fin)
+              .reduce((acc, tm) => acc + (Date.parse(tm.fin) - Date.parse(tm.inicio)), 0);
+            return { ...t, totalMs };
+          } catch {
+            return { ...t, totalMs: 0 };
+          }
+        })
+      );
+      setTareas(withTime);
     } catch (err) {
       console.error("Error al cargar tareas:", err);
       setError("No se pudieron cargar las tareas.");
@@ -215,6 +230,7 @@ export default function App() {
                 tareas={tareas}
                 loading={loading || loadingTareas}
                 onAfterSave={loadTareas}
+                onTimerStopped={loadTareas}
                 onReorderSameColumn={async (col, idsOrdenados) => {
                   // Normaliza estado igual que el board
                   const norm = (e) => {
@@ -251,16 +267,6 @@ export default function App() {
                   // Optimista en UI: cambia estado y aplica orden en ambas columnas
                   setTareas((prev) => {
                     const byId = Object.fromEntries(prev.map((t) => [t.id, t]));
-                    const moved = byId[tareaId];
-
-                    // columna origen según estado previo
-                    const fromCol = (() => {
-                      const s = String(moved?.estado || "").toLowerCase();
-                      if (s.startsWith("en")) return "en_progreso";
-                      if (s.startsWith("comp")) return "completada";
-                      return "pendiente";
-                    })();
-
                     const targetTasks = targetIds.map((id) => ({ ...byId[id], estado: to }));
                     const sourceTasks = sourceIds.map((id) => byId[id]); // mantiene estado de origen
                     const keep = prev.filter(
@@ -329,13 +335,13 @@ export default function App() {
           onClose={() => setShowCreateTarea(false)}
           proyecto={selectedProyecto}
           onCreated={(nueva) => {
-            setTareas((prev) => [nueva, ...prev]);
+            setTareas((prev) => [{ ...nueva, totalMs: 0 }, ...prev]);
           }}
         />
       </div>
 
       {/* Barra global del temporizador */}
-      <TimeBar />
+      <TimeBar onStopped={loadTareas} />
     </ActiveTimerProvider>
   );
 }

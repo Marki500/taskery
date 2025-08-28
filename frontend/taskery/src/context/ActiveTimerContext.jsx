@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { getActiveTimer, startTimer, stopTimer } from '@/services/timers';
+import { getActiveTimer, getTimersByTask, startTimer, stopTimer } from '@/services/timers';
 
 const ActiveTimerContext = createContext(null);
 
@@ -7,6 +7,7 @@ export function ActiveTimerProvider({ children, refreshMs = 15000 }) {
   const [active, setActive] = useState(null);      // timer activo o null
   const [runningForMs, setRunningForMs] = useState(0);
   const [clockOffsetMs, setClockOffsetMs] = useState(0);
+  const [baseElapsedMs, setBaseElapsedMs] = useState(0);
   const tickRef = useRef(null);
 
   // Cargar el activo al montar
@@ -15,8 +16,14 @@ export function ActiveTimerProvider({ children, refreshMs = 15000 }) {
       try {
         const a = await getActiveTimer();
         if (a?.inicio) {
+          const timers = await getTimersByTask(a.tareaId);
+          const base = timers
+            .filter((t) => t.fin)
+            .reduce((acc, t) => acc + (Date.parse(t.fin) - Date.parse(t.inicio)), 0);
+          setBaseElapsedMs(base);
           setClockOffsetMs(Date.now() - Date.parse(a.inicio));
         } else {
+          setBaseElapsedMs(0);
           setClockOffsetMs(0);
         }
         setActive(a);
@@ -31,7 +38,7 @@ export function ActiveTimerProvider({ children, refreshMs = 15000 }) {
     if (active?.inicio) {
       const started = new Date(active.inicio).getTime();
       clearInterval(tickRef.current);
-      const compute = () => Date.now() - started - clockOffsetMs;
+      const compute = () => baseElapsedMs + Date.now() - started - clockOffsetMs;
       setRunningForMs(compute());
       tickRef.current = setInterval(() => {
         setRunningForMs(compute());
@@ -41,7 +48,7 @@ export function ActiveTimerProvider({ children, refreshMs = 15000 }) {
       clearInterval(tickRef.current);
       setRunningForMs(0);
     }
-  }, [active?.id, active?.inicio, clockOffsetMs]);
+  }, [active?.id, active?.inicio, clockOffsetMs, baseElapsedMs]);
 
   // Auto-refresh para sincronizar multi-pestaña
   useEffect(() => {
@@ -49,8 +56,14 @@ export function ActiveTimerProvider({ children, refreshMs = 15000 }) {
       try {
         const a = await getActiveTimer();
         if (a?.inicio) {
+          const timers = await getTimersByTask(a.tareaId);
+          const base = timers
+            .filter((t) => t.fin)
+            .reduce((acc, t) => acc + (Date.parse(t.fin) - Date.parse(t.inicio)), 0);
+          setBaseElapsedMs(base);
           setClockOffsetMs(Date.now() - Date.parse(a.inicio));
         } else {
+          setBaseElapsedMs(0);
           setClockOffsetMs(0);
         }
         setActive(a);
@@ -62,6 +75,11 @@ export function ActiveTimerProvider({ children, refreshMs = 15000 }) {
   async function start(tareaId, note) {
     try {
       const res = await startTimer(tareaId, note);
+      const timers = await getTimersByTask(tareaId);
+      const base = timers
+        .filter((t) => t.fin)
+        .reduce((acc, t) => acc + (Date.parse(t.fin) - Date.parse(t.inicio)), 0);
+      setBaseElapsedMs(base);
       setClockOffsetMs(Date.now() - Date.parse(res.newTimer.inicio));
       setActive(res.newTimer);
       return res;
@@ -70,8 +88,14 @@ export function ActiveTimerProvider({ children, refreshMs = 15000 }) {
       try {
         const a = await getActiveTimer();
         if (a?.inicio) {
+          const timers = await getTimersByTask(a.tareaId);
+          const base = timers
+            .filter((t) => t.fin)
+            .reduce((acc, t) => acc + (Date.parse(t.fin) - Date.parse(t.inicio)), 0);
+          setBaseElapsedMs(base);
           setClockOffsetMs(Date.now() - Date.parse(a.inicio));
         } else {
+          setBaseElapsedMs(0);
           setClockOffsetMs(0);
         }
         setActive(a);
@@ -82,12 +106,16 @@ export function ActiveTimerProvider({ children, refreshMs = 15000 }) {
   }
 
   async function stop() {
+    const final = runningForMs;
     await stopTimer();
     setActive(null);
     setClockOffsetMs(0);
+    setBaseElapsedMs(0);
+    setRunningForMs(0);
+    return final;
   }
 
-  const value = useMemo(() => ({ active, runningForMs, start, stop }), [active, runningForMs]);
+  const value = useMemo(() => ({ active, runningForMs, start, stop }), [active, runningForMs, start, stop]);
 
   return (
     <ActiveTimerContext.Provider value={value}>
