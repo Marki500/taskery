@@ -103,7 +103,7 @@ export async function moverTarea({ tareaId, proyectoId, to, targetIds, sourceIds
 }
 
 /** Heurística simple para deducir la columna origen (opcional) */
-function guessFromFromDiff(targetIds, sourceIds) {
+function guessFromFromDiff() {
   // Si quieres, puedes pasar el `from` explícito y no usar esto.
   // Lo dejo por si mueves esta lógica aquí y no quieres tocar más.
   // Devuelve 'pendiente' | 'en_progreso' | 'completada' | null
