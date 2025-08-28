@@ -14,6 +14,9 @@ router.get('/mis-empresas', verificarToken, empresaController.listarEmpresasDelU
 // Debe ser una función, por ejemplo:
 router.put('/:id', verificarToken, empresaController.editarEmpresa);
 
+// Invitar usuario a empresa
+router.post('/:id/invitaciones', verificarToken, empresaController.invitarUsuarioAEmpresa);
+
 // GET /empresas/:id  -> Devuelve la empresa, sus proyectos y usuarios
 router.get('/:id', verificarToken, empresaController.obtenerEmpresaPorId);
 

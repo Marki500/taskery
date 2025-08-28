@@ -17,6 +17,7 @@ import { getTimersByTask } from "./services/timers";
 // ✅ NUEVO: Contexto del timer + barra
 import { ActiveTimerProvider } from "./context/ActiveTimerContext";
 import TimeBar from "./components/TimeBar";
+import NavBar from "./components/NavBar";
 
 export default function App() {
   // Auth & data
@@ -151,6 +152,7 @@ export default function App() {
 
   return (
     <ActiveTimerProvider>
+      <NavBar />
       <div className="min-h-screen flex bg-neutral-950 text-white">
         {/* Fondo */}
         <div

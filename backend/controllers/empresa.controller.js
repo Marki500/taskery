@@ -141,8 +141,40 @@ async function listarEmpresasDelUsuario(req, res) {
   }
 }
 
+/**
+ * POST /empresas/:id/invitaciones
+ * Body: { email }
+ */
+async function invitarUsuarioAEmpresa(req, res) {
+  const { id } = req.params
+  const { email } = req.body
+  if (!email) return res.status(400).json({ error: 'email es requerido' })
+  try {
+    const empresaId = Number(id)
+    // verificar que solicitante pertenece a la empresa
+    const pertenece = await prisma.empresa.findFirst({
+      where: { id: empresaId, usuarios: { some: { id: req.usuario.id } } },
+      select: { id: true }
+    })
+    if (!pertenece) {
+      return res.status(403).json({ error: 'No tienes acceso a esta empresa' })
+    }
+    const usuario = await prisma.usuario.findUnique({ where: { email } })
+    if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' })
+    await prisma.empresa.update({
+      where: { id: empresaId },
+      data: { usuarios: { connect: { id: usuario.id } } }
+    })
+    return res.json({ ok: true })
+  } catch (error) {
+    console.error('[invitarUsuarioAEmpresa] Error:', error)
+    return res.status(500).json({ error: 'Error al invitar usuario' })
+  }
+}
+
 // Exporta cada función como propiedad del objeto exports
 exports.crearEmpresa = crearEmpresa
 exports.editarEmpresa = editarEmpresa
 exports.obtenerEmpresaPorId = obtenerEmpresaPorId
 exports.listarEmpresasDelUsuario = listarEmpresasDelUsuario
+exports.invitarUsuarioAEmpresa = invitarUsuarioAEmpresa

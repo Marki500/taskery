@@ -11,7 +11,17 @@ export async function listarProyectosPorEmpresa(empresaId) {
   return data;
 }
 
+export async function listarProyectos() {
+  const { data } = await api.get('/proyectos/mis-proyectos');
+  return data;
+}
+
 export async function editarProyecto(id, payload) {
   const { data } = await api.put(`/proyectos/${id}`, payload);
+  return data;
+}
+
+export async function invitarUsuarioAProyecto(id, email) {
+  const { data } = await api.post(`/proyectos/${id}/invitaciones`, { email });
   return data;
 }
