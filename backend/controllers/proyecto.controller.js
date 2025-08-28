@@ -44,7 +44,8 @@ async function crearProyecto(req, res) {
             : horasMensuales !== undefined
             ? Number(horasMensuales)
             : null,
-        empresa: { connect: { id: Number(empresaId) } }, // 👈 clave
+        empresa: { connect: { id: Number(empresaId) } },
+        usuarios: { connect: { id: Number(usuarioId) } },
       },
       select: {
         id: true,
@@ -106,6 +107,35 @@ async function listarProyectosPorEmpresa(req, res) {
     return res.json(proyectos)
   } catch (error) {
     console.error('[listarProyectosPorEmpresa] Error:', error)
+    return res.status(500).json({ error: 'Error al listar proyectos' })
+  }
+}
+
+/**
+ * GET /proyectos/mis-proyectos
+ * Lista todos los proyectos a los que pertenece el usuario
+ */
+async function listarMisProyectos(req, res) {
+  const usuarioId = req.usuario?.id
+  try {
+    const proyectos = await prisma.proyecto.findMany({
+      where: {
+        empresa: { usuarios: { some: { id: Number(usuarioId) } } },
+      },
+      select: {
+        id: true,
+        nombre: true,
+        descripcion: true,
+        horasMensuales: true,
+        empresa: { select: { id: true, nombre: true } },
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+    return res.json(proyectos)
+  } catch (error) {
+    console.error('[listarMisProyectos] Error:', error)
     return res.status(500).json({ error: 'Error al listar proyectos' })
   }
 }
@@ -174,5 +204,55 @@ async function editarProyecto(req, res) {
   }
 }
 
+/**
+ * POST /proyectos/:id/invitaciones
+ * Body: { email }
+ */
+async function invitarUsuarioAProyecto(req, res) {
+  const { id } = req.params
+  const { email } = req.body
+  if (!email) return res.status(400).json({ error: 'email es requerido' })
+  try {
+    const proyectoId = Number(id)
+    const proyecto = await prisma.proyecto.findUnique({
+      where: { id: proyectoId },
+      select: { id: true, empresaId: true },
+    })
+    if (!proyecto) return res.status(404).json({ error: 'Proyecto no encontrado' })
 
-module.exports = { crearProyecto, listarProyectosPorEmpresa, editarProyecto }
+    const pertenece = await prisma.empresa.findFirst({
+      where: { id: proyecto.empresaId, usuarios: { some: { id: req.usuario.id } } },
+      select: { id: true },
+    })
+    if (!pertenece) {
+      return res.status(403).json({ error: 'No tienes acceso a este proyecto' })
+    }
+
+    const usuario = await prisma.usuario.findUnique({ where: { email } })
+    if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' })
+
+    await prisma.proyecto.update({
+      where: { id: proyectoId },
+      data: { usuarios: { connect: { id: usuario.id } } },
+    })
+    // asegura que el usuario pertenezca a la empresa
+    await prisma.empresa.update({
+      where: { id: proyecto.empresaId },
+      data: { usuarios: { connect: { id: usuario.id } } },
+    }).catch(() => {})
+
+    return res.json({ ok: true })
+  } catch (error) {
+    console.error('[invitarUsuarioAProyecto] Error:', error)
+    return res.status(500).json({ error: 'Error al invitar usuario' })
+  }
+}
+
+
+module.exports = {
+  crearProyecto,
+  listarProyectosPorEmpresa,
+  listarMisProyectos,
+  editarProyecto,
+  invitarUsuarioAProyecto,
+}

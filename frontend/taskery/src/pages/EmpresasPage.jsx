@@ -1,12 +1,15 @@
 // src/pages/EmpresasPage.jsx
 import React, { useEffect, useState } from 'react'
-import { listarMisEmpresas } from '@/services/empresas'
+import { listarMisEmpresas, invitarUsuarioAEmpresa } from '@/services/empresas'
 import EmpresaModal from '@/components/EmpresaModal'
+import InviteModal from '@/components/InviteModal'
 
 export default function EmpresasPage() {
   const [empresas, setEmpresas] = useState([])
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(null)
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [empresaInvitando, setEmpresaInvitando] = useState(null)
 
   async function load() {
     const data = await listarMisEmpresas()
@@ -27,21 +30,39 @@ export default function EmpresasPage() {
       </div>
 
       <ul className="space-y-2">
-        {empresas.map(e => (
-          <li key={e.id}
-              className="p-3 rounded-xl bg-slate-800 border border-white/10 flex justify-between items-center">
-            <div>
-              <div className="text-slate-100 font-medium">{e.nombre}</div>
-              {e.descripcion && <div className="text-slate-300/80 text-sm">{e.descripcion}</div>}
-            </div>
-            <button
-              onClick={() => { setEditing(e); setOpen(true) }}
-              className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600"
+          {empresas.map(e => (
+            <li
+              key={e.id}
+              className="p-3 rounded-xl bg-slate-800 border border-white/10 flex justify-between items-center"
             >
-              Editar
-            </button>
-          </li>
-        ))}
+              <div>
+                <div className="text-slate-100 font-medium">{e.nombre}</div>
+                {e.descripcion && (
+                  <div className="text-slate-300/80 text-sm">{e.descripcion}</div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setEmpresaInvitando(e)
+                    setInviteOpen(true)
+                  }}
+                  className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600"
+                >
+                  Invitar
+                </button>
+                <button
+                  onClick={() => {
+                    setEditing(e)
+                    setOpen(true)
+                  }}
+                  className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600"
+                >
+                  Editar
+                </button>
+              </div>
+            </li>
+          ))}
       </ul>
 
       <EmpresaModal
@@ -49,6 +70,12 @@ export default function EmpresasPage() {
         onClose={() => setOpen(false)}
         initialData={editing}
         onSaved={load}
+      />
+      <InviteModal
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        title={empresaInvitando ? `Invitar a ${empresaInvitando.nombre}` : 'Invitar'}
+        onInvite={email => invitarUsuarioAEmpresa(empresaInvitando.id, email)}
       />
     </div>
   )

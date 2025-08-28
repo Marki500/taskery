@@ -50,6 +50,9 @@ model Usuario {
   // M:N con Empresa
   empresas Empresa[] @relation("EmpresasUsuarios")
 
+  // M:N con Proyecto
+  proyectos Proyecto[] @relation("ProyectosUsuarios")
+
   // M:N con Tarea (asignaciones)
   tareas Tarea[] @relation("UsuariosAsignados")
 
@@ -59,15 +62,16 @@ model Usuario {
 }
 
 model Proyecto {
-  id             Int      @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   nombre         String
   descripcion    String?
   horasMensuales Int?
   empresaId      Int
-  empresa        Empresa  @relation(fields: [empresaId], references: [id])
+  empresa        Empresa   @relation(fields: [empresaId], references: [id])
   tareas         Tarea[]
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  usuarios       Usuario[] @relation("ProyectosUsuarios")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([empresaId])
 }
