@@ -24,17 +24,16 @@ export default function EmpresasPage() {
   if (!getToken()) return <Login />
 
   return (
-    <>
+    <div className="min-h-screen bg-neutral-950 text-white relative">
+      <div
+        className="absolute inset-0 -z-10"
+        style={{
+          background:
+            'radial-gradient(60rem 40rem at -10% -20%, rgba(59,162,237,0.10), transparent 60%), radial-gradient(40rem 30rem at 110% -10%, rgba(59,162,237,0.08), transparent 55%)'
+        }}
+      />
       <NavBar />
-      <div className="min-h-screen bg-neutral-950 text-white relative">
-        <div
-          className="absolute inset-0 -z-10"
-          style={{
-            background:
-              'radial-gradient(60rem 40rem at -10% -20%, rgba(59,162,237,0.10), transparent 60%), radial-gradient(40rem 30rem at 110% -10%, rgba(59,162,237,0.08), transparent 55%)'
-          }}
-        />
-        <div className="max-w-3xl mx-auto p-6">
+      <div className="max-w-3xl mx-auto p-6">
           <header className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-semibold text-sky-300">Empresas</h1>
             <button
@@ -84,20 +83,19 @@ export default function EmpresasPage() {
             ))}
           </ul>
 
-          <EmpresaModal
-            open={open}
-            onClose={() => setOpen(false)}
-            initialData={editing}
-            onSaved={load}
-          />
-          <InviteModal
-            open={inviteOpen}
-            onClose={() => setInviteOpen(false)}
-            title={empresaInvitando ? `Invitar a ${empresaInvitando.nombre}` : 'Invitar'}
-            onInvite={email => invitarUsuarioAEmpresa(empresaInvitando.id, email)}
-          />
-        </div>
+        <EmpresaModal
+          open={open}
+          onClose={() => setOpen(false)}
+          initialData={editing}
+          onSaved={load}
+        />
+        <InviteModal
+          open={inviteOpen}
+          onClose={() => setInviteOpen(false)}
+          title={empresaInvitando ? `Invitar a ${empresaInvitando.nombre}` : 'Invitar'}
+          onInvite={email => invitarUsuarioAEmpresa(empresaInvitando.id, email)}
+        />
       </div>
-    </>
+    </div>
   )
 }

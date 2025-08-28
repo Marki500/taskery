@@ -26,17 +26,16 @@ export default function ProyectosPage({ empresaId }) {
 
 
   return (
-    <>
+    <div className="min-h-screen bg-neutral-950 text-white relative">
+      <div
+        className="absolute inset-0 -z-10"
+        style={{
+          background:
+            'radial-gradient(60rem 40rem at -10% -20%, rgba(59,162,237,0.10), transparent 60%), radial-gradient(40rem 30rem at 110% -10%, rgba(59,162,237,0.08), transparent 55%)'
+        }}
+      />
       <NavBar />
-      <div className="min-h-screen bg-neutral-950 text-white relative">
-        <div
-          className="absolute inset-0 -z-10"
-          style={{
-            background:
-              'radial-gradient(60rem 40rem at -10% -20%, rgba(59,162,237,0.10), transparent 60%), radial-gradient(40rem 30rem at 110% -10%, rgba(59,162,237,0.08), transparent 55%)'
-          }}
-        />
-        <div className="max-w-3xl mx-auto p-6">
+      <div className="max-w-3xl mx-auto p-6">
           <header className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-semibold text-sky-300">Proyectos</h1>
             {empresaId && (
@@ -88,21 +87,20 @@ export default function ProyectosPage({ empresaId }) {
             ))}
           </ul>
 
-          <ProyectoModal
-            open={open}
-            onClose={() => setOpen(false)}
-            initialData={editing}
-            empresaId={empresaId}
-            onSaved={load}
-          />
-          <InviteModal
-            open={inviteOpen}
-            onClose={() => setInviteOpen(false)}
-            title={proyectoInvitando ? `Invitar a ${proyectoInvitando.nombre}` : 'Invitar'}
-            onInvite={email => invitarUsuarioAProyecto(proyectoInvitando.id, email)}
-          />
-        </div>
+        <ProyectoModal
+          open={open}
+          onClose={() => setOpen(false)}
+          initialData={editing}
+          empresaId={empresaId}
+          onSaved={load}
+        />
+        <InviteModal
+          open={inviteOpen}
+          onClose={() => setInviteOpen(false)}
+          title={proyectoInvitando ? `Invitar a ${proyectoInvitando.nombre}` : 'Invitar'}
+          onInvite={email => invitarUsuarioAProyecto(proyectoInvitando.id, email)}
+        />
       </div>
-    </>
+    </div>
   )
 }
