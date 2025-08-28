@@ -58,7 +58,7 @@ function msToHMS(ms) {
   return `${h}:${m}:${ss}`;
 }
 
-function TareaCardSortable({ tarea, onEdit, activeTareaId, startTimer, stopTimer, runningForMs, onTimerStopped }) {
+function TareaCardSortable({ tarea, onEdit, activeTareaId, startTimer, stopTimer, onTimerStopped }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: String(tarea.id) });
 
@@ -80,7 +80,8 @@ function TareaCardSortable({ tarea, onEdit, activeTareaId, startTimer, stopTimer
     e.stopPropagation();
   };
 
-  const displayMs = esActiva ? runningForMs : tarea.totalMs || 0;
+  // El tiempo mostrado en la tarjeta solo se actualiza cuando se detiene el temporizador
+  const displayMs = tarea.totalMs || 0;
 
   return (
     <li
@@ -244,7 +245,7 @@ export default function KanbanBoardDnd({
   );
 
   // 👇 CONSUME EL CONTEXTO DEL TIMER
-  const { active, runningForMs, start, stop } = useActiveTimer();
+  const { active, start, stop } = useActiveTimer();
   const activeTareaId = active?.tareaId ?? null;
 
   const grouped = useMemo(() => {
@@ -414,7 +415,6 @@ export default function KanbanBoardDnd({
                             activeTareaId={activeTareaId}
                             startTimer={start}
                             stopTimer={stop}
-                            runningForMs={runningForMs}
                             onTimerStopped={onTimerStopped}
                             onEdit={(task) => {
                               setEditing(task);
