@@ -10,3 +10,13 @@ option {
   color: white;
 }
 
+/* Transición suave entre páginas */
+body {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+body.fade-in {
+  opacity: 1;
+}
+

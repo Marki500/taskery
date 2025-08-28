@@ -165,6 +165,30 @@ async function eliminarEmpresa(req, res) {
       return res.status(403).json({ error: 'No tienes acceso a esta empresa' })
     }
 
+    // Elimina dependencias antes de borrar la empresa para evitar errores de FK
+    await prisma.timer.deleteMany({
+      where: {
+        tarea: {
+          proyecto: { empresaId },
+        },
+      },
+    })
+
+    await prisma.tarea.deleteMany({
+      where: {
+        proyecto: { empresaId },
+      },
+    })
+
+    await prisma.proyecto.deleteMany({ where: { empresaId } })
+    await prisma.invitacion.deleteMany({ where: { empresaId } })
+
+    // Limpia la relación M:N con usuarios
+    await prisma.empresa.update({
+      where: { id: empresaId },
+      data: { usuarios: { set: [] } },
+    })
+
     await prisma.empresa.delete({ where: { id: empresaId } })
     return res.json({ ok: true })
   } catch (error) {
