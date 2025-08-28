@@ -152,7 +152,7 @@ export default function App() {
 
   return (
     <ActiveTimerProvider>
-      <NavBar />
+      <NavBar onLogout={handleLogout} />
       <div className="min-h-screen flex bg-neutral-950 text-white">
         {/* Fondo */}
         <div
@@ -209,12 +209,6 @@ export default function App() {
                   {error}
                 </span>
               )}
-              <button
-                onClick={handleLogout}
-                className="text-xs px-3 py-1.5 rounded-xl bg:white/5 hover:bg-white/10 border border-white/10"
-              >
-                Cerrar sesión
-              </button>
             </div>
           </header>
 
