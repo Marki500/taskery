@@ -1,0 +1,18 @@
+import { Sidebar } from "@/components/dashboard/sidebar"
+import { FloatingTimer } from "@/components/timer/floating-timer"
+
+export default function DashboardLayout({
+    children,
+}: {
+    children: React.ReactNode
+}) {
+    return (
+        <div className="flex min-h-screen bg-background w-full">
+            <Sidebar />
+            <main className="flex-1 overflow-y-auto h-screen p-4 md:p-8 bg-slate-50/50 dark:bg-black/50">
+                {children}
+            </main>
+            <FloatingTimer />
+        </div>
+    )
+}
