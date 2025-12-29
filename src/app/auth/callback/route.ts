@@ -18,7 +18,27 @@ export async function GET(request: Request) {
             const { data: { user } } = await supabase.auth.getUser()
 
             if (user) {
-                // Check if user already has a workspace
+                const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario'
+
+                // 1. Ensure profile exists (in case DB trigger didn't run)
+                const { data: existingProfile } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('id', user.id)
+                    .single()
+
+                if (!existingProfile) {
+                    await supabase
+                        .from('profiles')
+                        .insert({
+                            id: user.id,
+                            email: user.email,
+                            full_name: userName,
+                            avatar_url: user.user_metadata?.avatar_url || null
+                        })
+                }
+
+                // 2. Check if user already has a workspace
                 const { data: existingMembership } = await supabase
                     .from('workspace_members')
                     .select('id')
@@ -28,8 +48,6 @@ export async function GET(request: Request) {
 
                 if (!existingMembership) {
                     // Create default workspace for new OAuth user
-                    const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario'
-
                     const { data: workspace } = await supabase
                         .from('workspaces')
                         .insert({
