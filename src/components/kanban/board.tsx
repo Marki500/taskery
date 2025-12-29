@@ -19,6 +19,7 @@ import { Task, TaskCard } from './task-card'
 import { getProjectTasks, updateTaskStatus } from '@/app/(dashboard)/projects/actions'
 import { toast } from "sonner"
 import { NewTaskDialog } from './new-task-dialog'
+import { useTimer } from '@/contexts/timer-context'
 
 type ColumnDef = {
     id: string
@@ -37,6 +38,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
     const [tasks, setTasks] = useState<Task[]>([])
     const [activeTask, setActiveTask] = useState<Task | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+    const { lastStoppedTask } = useTimer()
 
     const loadTasks = useCallback(async () => {
         try {
@@ -52,6 +54,19 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
     useEffect(() => {
         loadTasks()
     }, [loadTasks])
+
+    // Update task time when timer stops (without page reload)
+    useEffect(() => {
+        if (lastStoppedTask) {
+            setTasks(prevTasks =>
+                prevTasks.map(task =>
+                    task.id === lastStoppedTask.taskId
+                        ? { ...task, totalTime: lastStoppedTask.newTotalTime }
+                        : task
+                )
+            )
+        }
+    }, [lastStoppedTask])
 
     const sensors = useSensors(
         useSensor(PointerSensor, {

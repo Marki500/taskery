@@ -3,6 +3,7 @@ import { Nunito } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { TimerProvider } from "@/contexts/timer-context";
+import { ThemeProvider } from "next-themes";
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -21,15 +22,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <body
         className={`${nunito.variable} font-sans antialiased text-lg md:text-xl`}
       >
-        <TimerProvider>
-          {children}
-        </TimerProvider>
-        <Toaster />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <TimerProvider>
+            {children}
+          </TimerProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
 }
+

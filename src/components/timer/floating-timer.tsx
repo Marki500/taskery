@@ -14,9 +14,7 @@ export function FloatingTimer() {
 
     const handleStop = async () => {
         await stopTimer()
-        // Force a full page reload to show updated totalTime
-        // Using location.reload because router.refresh doesn't seem to refresh server data properly
-        window.location.reload()
+        // No need for page reload - Kanban will react to lastStoppedTask change
     }
 
     return (

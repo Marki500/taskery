@@ -19,9 +19,10 @@ interface TimerContextType {
     totalElapsed: number  // totalTime + elapsedSeconds
     isRunning: boolean
     startTimer: (task: ActiveTimerTask) => Promise<void>
-    stopTimer: () => Promise<void>
+    stopTimer: () => Promise<{ taskId: string; newTotalTime: number } | null>
     pauseTimer: () => void
     resumeTimer: () => void
+    lastStoppedTask: { taskId: string; newTotalTime: number } | null
 }
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined)
@@ -32,6 +33,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     const [elapsedSeconds, setElapsedSeconds] = useState(0)
     const [baseTotalTime, setBaseTotalTime] = useState(0)  // Previously accumulated time
     const [isRunning, setIsRunning] = useState(false)
+    const [lastStoppedTask, setLastStoppedTask] = useState<{ taskId: string; newTotalTime: number } | null>(null)
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
     // Cleanup interval on unmount
@@ -81,11 +83,27 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     }, [])
 
     const stopTimer = useCallback(async () => {
-        if (activeTimeEntryId && elapsedSeconds > 0) {
+        if (activeTimeEntryId && elapsedSeconds > 0 && activeTask) {
             try {
                 // Save time entry to database
                 await stopTimeEntry(activeTimeEntryId, elapsedSeconds)
                 toast.success(`Tiempo guardado: ${formatTime(elapsedSeconds)}`)
+
+                // Calculate new total time for the task
+                const newTotalTime = (activeTask.totalTime || 0) + elapsedSeconds
+                const taskId = activeTask.id
+
+                // Reset state
+                setActiveTask(null)
+                setActiveTimeEntryId(null)
+                setBaseTotalTime(0)
+                setElapsedSeconds(0)
+                setIsRunning(false)
+
+                // Set last stopped task for listeners
+                setLastStoppedTask({ taskId, newTotalTime })
+
+                return { taskId, newTotalTime }
             } catch (error) {
                 console.error('Error stopping timer:', error)
                 toast.error('Error al guardar el tiempo')
@@ -97,7 +115,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         setBaseTotalTime(0)
         setElapsedSeconds(0)
         setIsRunning(false)
-    }, [activeTimeEntryId, elapsedSeconds])
+        return null
+    }, [activeTimeEntryId, elapsedSeconds, activeTask])
 
     const pauseTimer = useCallback(() => {
         setIsRunning(false)
@@ -121,6 +140,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                 stopTimer,
                 pauseTimer,
                 resumeTimer,
+                lastStoppedTask,
             }}
         >
             {children}
