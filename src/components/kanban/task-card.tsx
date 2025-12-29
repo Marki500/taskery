@@ -4,20 +4,24 @@ import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { GripVertical, Play, Timer, Clock } from "lucide-react"
+import { GripVertical, Play, Clock, CalendarIcon, Pencil } from "lucide-react"
 import { useTimer, formatTime } from "@/contexts/timer-context"
 import { Button } from "@/components/ui/button"
-import { EditTaskDialog } from "./edit-task-dialog"
-import { updateTask, deleteTask } from "@/app/(dashboard)/projects/actions"
+import { TaskSidebar } from "./task-sidebar"
 import { cn } from "@/lib/utils"
+import { format, isToday, isTomorrow, isPast, differenceInDays } from "date-fns"
+import { es } from "date-fns/locale"
 
 export type Task = {
     id: string
     title: string
+    description?: string | null
     columnId: string
     tag?: string
     projectId?: string
     totalTime?: number  // Accumulated time in seconds from time_entries
+    deadline?: string | null  // ISO date string for deadline
+    assignedTo?: string | null // User ID of assigned person
 }
 
 interface TaskCardProps {
@@ -33,9 +37,42 @@ const columnColors: Record<string, string> = {
     'done': 'border-l-green-500',
 }
 
+// Get deadline display info with urgency colors
+function getDeadlineInfo(deadline: string | null | undefined) {
+    if (!deadline) return null
+
+    const deadlineDate = new Date(deadline)
+    const now = new Date()
+    const daysUntil = differenceInDays(deadlineDate, now)
+
+    let color = "text-muted-foreground"
+    let bgColor = "bg-muted/50"
+    let label = format(deadlineDate, "d MMM", { locale: es })
+
+    if (isPast(deadlineDate) && !isToday(deadlineDate)) {
+        color = "text-red-600"
+        bgColor = "bg-red-100 dark:bg-red-900/30"
+        label = "Vencida"
+    } else if (isToday(deadlineDate)) {
+        color = "text-orange-600"
+        bgColor = "bg-orange-100 dark:bg-orange-900/30"
+        label = "Hoy"
+    } else if (isTomorrow(deadlineDate)) {
+        color = "text-amber-600"
+        bgColor = "bg-amber-100 dark:bg-amber-900/30"
+        label = "Mañana"
+    } else if (daysUntil <= 3) {
+        color = "text-yellow-600"
+        bgColor = "bg-yellow-100 dark:bg-yellow-900/30"
+    }
+
+    return { color, bgColor, label }
+}
+
 export function TaskCard({ task, onTaskUpdated }: TaskCardProps) {
     const { startTimer, activeTask, elapsedSeconds } = useTimer()
     const isTimerActive = activeTask?.id === task.id
+    const deadlineInfo = getDeadlineInfo(task.deadline)
 
     const {
         setNodeRef,
@@ -65,16 +102,6 @@ export function TaskCard({ task, onTaskUpdated }: TaskCardProps) {
             projectId: task.projectId || 'unknown',
             totalTime: task.totalTime || 0
         })
-    }
-
-    const handleSave = async (id: string, title: string, tag?: string) => {
-        await updateTask(id, title, tag)
-        onTaskUpdated?.()
-    }
-
-    const handleDelete = async (id: string) => {
-        await deleteTask(id)
-        onTaskUpdated?.()
     }
 
     const leftBorderColor = columnColors[task.columnId] || 'border-l-muted'
@@ -110,11 +137,20 @@ export function TaskCard({ task, onTaskUpdated }: TaskCardProps) {
                         {task.title}
                     </span>
                     <div className="flex items-center gap-1">
-                        {/* Edit Button */}
-                        <EditTaskDialog
+                        {/* Edit Button - Opens Sidebar */}
+                        <TaskSidebar
                             task={task}
-                            onSave={handleSave}
-                            onDelete={handleDelete}
+                            onTaskUpdated={onTaskUpdated}
+                            trigger={
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                >
+                                    <Pencil className="h-4 w-4" />
+                                </Button>
+                            }
                         />
 
                         {/* Timer Button */}
@@ -136,6 +172,18 @@ export function TaskCard({ task, onTaskUpdated }: TaskCardProps) {
                         </button>
                     </div>
                 </div>
+
+                {/* Deadline Display */}
+                {deadlineInfo && (
+                    <div className={cn(
+                        "flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm font-medium",
+                        deadlineInfo.bgColor,
+                        deadlineInfo.color
+                    )}>
+                        <CalendarIcon className="h-3.5 w-3.5" />
+                        <span>{deadlineInfo.label}</span>
+                    </div>
+                )}
 
                 {/* Time Display - Always visible */}
                 <div className={cn(

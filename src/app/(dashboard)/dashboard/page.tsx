@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { StatsCards } from "@/components/dashboard/widgets/stats-cards"
 import { WeeklyChart } from "@/components/dashboard/widgets/weekly-chart"
+import { DeadlineCalendar } from "@/components/dashboard/widgets/deadline-calendar"
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -26,6 +27,8 @@ export default async function DashboardPage() {
 
             {/* Stats Row */}
             <StatsCards />
+            {/* Deadline Calendar - Full Width */}
+            <DeadlineCalendar />
 
             {/* Main Content Grid */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -49,3 +52,4 @@ export default async function DashboardPage() {
         </div>
     )
 }
+

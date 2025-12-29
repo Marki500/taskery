@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from "react"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
 import { Button } from "@/components/ui/button"
 import {
     Dialog,
@@ -13,16 +15,20 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Pencil, Trash2 } from "lucide-react"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Pencil, Trash2, CalendarIcon } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 interface EditTaskDialogProps {
     task: {
         id: string
         title: string
         tag?: string
+        deadline?: string | null
     }
-    onSave: (id: string, title: string, tag?: string) => Promise<void>
+    onSave: (id: string, title: string, tag?: string, deadline?: string | null) => Promise<void>
     onDelete?: (id: string) => Promise<void>
 }
 
@@ -30,6 +36,9 @@ export function EditTaskDialog({ task, onSave, onDelete }: EditTaskDialogProps) 
     const [open, setOpen] = useState(false)
     const [title, setTitle] = useState(task.title)
     const [tag, setTag] = useState(task.tag || "")
+    const [deadline, setDeadline] = useState<Date | undefined>(
+        task.deadline ? new Date(task.deadline) : undefined
+    )
     const [isLoading, setIsLoading] = useState(false)
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -41,7 +50,8 @@ export function EditTaskDialog({ task, onSave, onDelete }: EditTaskDialogProps) 
 
         setIsLoading(true)
         try {
-            await onSave(task.id, title.trim(), tag.trim() || undefined)
+            const deadlineISO = deadline ? deadline.toISOString() : null
+            await onSave(task.id, title.trim(), tag.trim() || undefined, deadlineISO)
             toast.success("Tarea actualizada")
             setOpen(false)
         } catch (error) {
@@ -105,6 +115,43 @@ export function EditTaskDialog({ task, onSave, onDelete }: EditTaskDialogProps) 
                                 placeholder="Ej: Backend, UI, Bug..."
                                 className="text-lg p-3"
                             />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label className="text-base">Fecha límite</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className={cn(
+                                            "w-full justify-start text-left font-normal text-lg p-3 h-auto",
+                                            !deadline && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {deadline ? format(deadline, "PPP", { locale: es }) : "Seleccionar fecha"}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={deadline}
+                                        onSelect={setDeadline}
+                                        initialFocus
+                                        locale={es}
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                            {deadline && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setDeadline(undefined)}
+                                    className="text-muted-foreground"
+                                >
+                                    Quitar fecha límite
+                                </Button>
+                            )}
                         </div>
                     </div>
                     <DialogFooter className="flex gap-2">

@@ -33,7 +33,7 @@ export async function signup(formData: FormData) {
     const password = formData.get('password') as string
     const fullName = formData.get('fullName') as string
 
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -51,8 +51,32 @@ export async function signup(formData: FormData) {
     // If Supabase returns a session, they are logged in (Auto Confirm is ON)
     const { data } = await supabase.auth.getSession()
     if (data.session) {
+        // Create default workspace for new user
+        const workspaceName = fullName || email.split('@')[0]
+
+        // Create workspace
+        const { data: workspace, error: wsError } = await supabase
+            .from('workspaces')
+            .insert({
+                name: `Workspace de ${workspaceName}`,
+                owner_id: data.session.user.id
+            })
+            .select()
+            .single()
+
+        if (workspace && !wsError) {
+            // Add user as admin member
+            await supabase
+                .from('workspace_members')
+                .insert({
+                    workspace_id: workspace.id,
+                    user_id: data.session.user.id,
+                    role: 'admin'
+                })
+        }
+
         revalidatePath('/', 'layout')
-        redirect('/projects')
+        redirect('/dashboard')
     }
 
     // If no session, it means they need to confirm email

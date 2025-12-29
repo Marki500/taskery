@@ -54,14 +54,59 @@ export async function getProjectTasks(projectId: string): Promise<Task[]> {
     return tasks.map((task: any) => ({
         id: task.id,
         title: task.title,
+        description: task.description || null,
         columnId: task.status,
         tag: task.tag,
         projectId: projectId,
-        totalTime: timeByTask[task.id] || 0
+        totalTime: timeByTask[task.id] || 0,
+        deadline: task.deadline || null,
+        assignedTo: task.assigned_to || null
     }))
 }
 
-export async function createTask(projectId: string, title: string, tag?: string) {
+export interface WorkspaceMember {
+    id: string
+    email: string
+    fullName: string | null
+    avatarUrl: string | null
+}
+
+export async function getWorkspaceMembers(projectId: string): Promise<WorkspaceMember[]> {
+    const supabase = await createClient()
+
+    // Get the workspace for this project
+    const { data: project } = await supabase
+        .from('projects')
+        .select('workspace_id')
+        .eq('id', projectId)
+        .single()
+
+    if (!project) return []
+
+    // Get all members of this workspace
+    const { data: members } = await supabase
+        .from('workspace_members')
+        .select('user_id, profiles(id, email, full_name, avatar_url)')
+        .eq('workspace_id', project.workspace_id)
+
+    if (!members) return []
+
+    return members.map((m: any) => ({
+        id: m.profiles.id,
+        email: m.profiles.email,
+        fullName: m.profiles.full_name,
+        avatarUrl: m.profiles.avatar_url
+    }))
+}
+
+export async function createTask(
+    projectId: string,
+    title: string,
+    tag?: string,
+    deadline?: string | null,
+    description?: string | null,
+    assignedTo?: string | null
+) {
     const supabase = await createClient()
 
     const { data, error } = await supabase
@@ -69,8 +114,11 @@ export async function createTask(projectId: string, title: string, tag?: string)
         .insert({
             project_id: projectId,
             title: title,
-            status: 'todo', // New tasks start in "Por hacer"
-            tag: tag || null
+            description: description || null,
+            status: 'todo',
+            tag: tag || null,
+            deadline: deadline || null,
+            assigned_to: assignedTo || null
         })
         .select()
         .single()
@@ -84,15 +132,33 @@ export async function createTask(projectId: string, title: string, tag?: string)
     return data
 }
 
-export async function updateTask(taskId: string, title: string, tag?: string) {
+export interface TaskUpdateData {
+    title: string
+    description?: string | null
+    tag?: string | null
+    deadline?: string | null
+    assignedTo?: string | null
+    status?: string
+}
+
+export async function updateTask(taskId: string, data: TaskUpdateData) {
     const supabase = await createClient()
+
+    const updateData: any = {
+        title: data.title,
+        description: data.description || null,
+        tag: data.tag || null,
+        deadline: data.deadline || null,
+        assigned_to: data.assignedTo || null
+    }
+
+    if (data.status) {
+        updateData.status = data.status
+    }
 
     const { error } = await supabase
         .from('tasks')
-        .update({
-            title: title,
-            tag: tag || null
-        })
+        .update(updateData)
         .eq('id', taskId)
 
     if (error) {
@@ -101,6 +167,7 @@ export async function updateTask(taskId: string, title: string, tag?: string) {
     }
 
     revalidatePath('/projects/[id]', 'page')
+    revalidatePath('/dashboard', 'page')
 }
 
 export async function deleteTask(taskId: string) {

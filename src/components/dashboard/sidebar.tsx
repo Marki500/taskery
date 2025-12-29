@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { createClient } from "@/utils/supabase/client"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { WorkspaceSelector } from "./workspace-selector"
 
 const sidebarItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
@@ -112,6 +113,11 @@ export function Sidebar() {
                         <span className="text-white font-bold text-lg">T</span>
                     </div>
                 )}
+            </div>
+
+            {/* Workspace Selector */}
+            <div className="px-3 py-2 border-b">
+                <WorkspaceSelector collapsed={collapsed} />
             </div>
 
             {/* Navigation */}
