@@ -36,13 +36,16 @@ export async function getUserWorkspaces(): Promise<Workspace[]> {
         return []
     }
 
-    return memberships.map((m: any) => ({
-        id: m.workspaces.id,
-        name: m.workspaces.name,
-        ownerId: m.workspaces.owner_id,
-        createdAt: m.workspaces.created_at,
-        role: m.role
-    }))
+    // Filter out any memberships where workspace is null (orphaned memberships)
+    return memberships
+        .filter((m: any) => m.workspaces !== null)
+        .map((m: any) => ({
+            id: m.workspaces.id,
+            name: m.workspaces.name,
+            ownerId: m.workspaces.owner_id,
+            createdAt: m.workspaces.created_at,
+            role: m.role
+        }))
 }
 
 // Get active workspace from cookie/storage or return first one
@@ -162,17 +165,13 @@ export async function updateWorkspace(workspaceId: string, name: string) {
 export async function getWorkspaceMembersWithDetails(workspaceId: string) {
     const supabase = await createClient()
 
+    // Use explicit foreign key hint: profiles!workspace_members_user_id_fkey
     const { data: members, error } = await supabase
         .from('workspace_members')
         .select(`
+            user_id,
             role,
-            joined_at,
-            profiles (
-                id,
-                email,
-                full_name,
-                avatar_url
-            )
+            joined_at
         `)
         .eq('workspace_id', workspaceId)
 
@@ -181,12 +180,24 @@ export async function getWorkspaceMembersWithDetails(workspaceId: string) {
         return []
     }
 
-    return members.map((m: any) => ({
-        id: m.profiles.id,
-        email: m.profiles.email,
-        fullName: m.profiles.full_name,
-        avatarUrl: m.profiles.avatar_url,
-        role: m.role,
-        joinedAt: m.joined_at
-    }))
+    // Fetch profiles separately to avoid foreign key issues
+    const userIds = members.map(m => m.user_id)
+    const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, avatar_url')
+        .in('id', userIds)
+
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || [])
+
+    return members.map((m: any) => {
+        const profile = profileMap.get(m.user_id)
+        return {
+            id: m.user_id,
+            email: profile?.email || '',
+            fullName: profile?.full_name || null,
+            avatarUrl: profile?.avatar_url || null,
+            role: m.role,
+            joinedAt: m.joined_at
+        }
+    })
 }

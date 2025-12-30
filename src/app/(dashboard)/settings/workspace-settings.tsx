@@ -26,11 +26,21 @@ import {
     Save,
     UserPlus,
     Copy,
-    Check
+    Check,
+    Clock,
+    X,
+    Loader2
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { updateWorkspace, Workspace } from "@/app/(dashboard)/workspaces/actions"
+import {
+    createInvitation,
+    generateInviteLink,
+    cancelInvitation,
+    Invitation
+} from "@/app/(dashboard)/workspaces/invitation-actions"
+import { useRouter } from "next/navigation"
 
 interface WorkspaceMember {
     id: string
@@ -45,20 +55,25 @@ interface WorkspaceSettingsProps {
     workspace: Workspace
     members: WorkspaceMember[]
     currentUserId: string
+    pendingInvitations?: Invitation[]
 }
 
 const roleConfig = {
-    admin: { label: 'Admin', icon: Crown, color: 'text-yellow-600 bg-yellow-100' },
-    member: { label: 'Miembro', icon: Shield, color: 'text-blue-600 bg-blue-100' },
-    client: { label: 'Cliente', icon: User, color: 'text-gray-600 bg-gray-100' },
+    admin: { label: 'Admin', icon: Crown, color: 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30' },
+    member: { label: 'Miembro', icon: Shield, color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30' },
+    client: { label: 'Cliente', icon: User, color: 'text-gray-600 bg-gray-100 dark:bg-gray-800' },
 }
 
-export function WorkspaceSettings({ workspace, members, currentUserId }: WorkspaceSettingsProps) {
+export function WorkspaceSettings({ workspace, members, currentUserId, pendingInvitations = [] }: WorkspaceSettingsProps) {
     const [workspaceName, setWorkspaceName] = useState(workspace.name)
     const [isSaving, setIsSaving] = useState(false)
     const [inviteEmail, setInviteEmail] = useState('')
     const [inviteRole, setInviteRole] = useState<'member' | 'client'>('member')
     const [copied, setCopied] = useState(false)
+    const [isInviting, setIsInviting] = useState(false)
+    const [isGeneratingLink, setIsGeneratingLink] = useState(false)
+    const [invitations, setInvitations] = useState<Invitation[]>(pendingInvitations)
+    const router = useRouter()
 
     const isOwner = workspace.ownerId === currentUserId
     const isAdmin = workspace.role === 'admin'
@@ -86,17 +101,52 @@ export function WorkspaceSettings({ workspace, members, currentUserId }: Workspa
             toast.error('El email es obligatorio')
             return
         }
-        // TODO: Implement invitation system
-        toast.info('Sistema de invitaciones próximamente')
-        setInviteEmail('')
+
+        setIsInviting(true)
+        const result = await createInvitation(workspace.id, inviteEmail.trim(), inviteRole)
+        setIsInviting(false)
+
+        if (result.error) {
+            toast.error(result.error)
+            return
+        }
+
+        if (result.invitation) {
+            setInvitations([result.invitation, ...invitations])
+            toast.success('Invitación enviada')
+            setInviteEmail('')
+        }
     }
 
-    const handleCopyInviteLink = () => {
-        // TODO: Generate real invite link
-        navigator.clipboard.writeText(`${window.location.origin}/invite/${workspace.id}`)
-        setCopied(true)
-        toast.success('Enlace copiado')
-        setTimeout(() => setCopied(false), 2000)
+    const handleCopyInviteLink = async () => {
+        setIsGeneratingLink(true)
+        const result = await generateInviteLink(workspace.id, inviteRole)
+        setIsGeneratingLink(false)
+
+        if (result.error) {
+            toast.error(result.error)
+            return
+        }
+
+        if (result.link) {
+            navigator.clipboard.writeText(result.link)
+            setCopied(true)
+            toast.success('Enlace copiado al portapapeles')
+            setTimeout(() => setCopied(false), 2000)
+            router.refresh()
+        }
+    }
+
+    const handleCancelInvitation = async (invitationId: string) => {
+        const result = await cancelInvitation(invitationId)
+
+        if (result.error) {
+            toast.error(result.error)
+            return
+        }
+
+        setInvitations(invitations.filter(inv => inv.id !== invitationId))
+        toast.success('Invitación cancelada')
     }
 
     return (
@@ -178,9 +228,13 @@ export function WorkspaceSettings({ workspace, members, currentUserId }: Workspa
                                     <SelectItem value="client">Cliente</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Button onClick={handleInvite}>
-                                <Mail className="h-4 w-4 mr-2" />
-                                Invitar
+                            <Button onClick={handleInvite} disabled={isInviting}>
+                                {isInviting ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                    <Mail className="h-4 w-4 mr-2" />
+                                )}
+                                {isInviting ? 'Enviando...' : 'Invitar'}
                             </Button>
                         </div>
 
@@ -191,20 +245,62 @@ export function WorkspaceSettings({ workspace, members, currentUserId }: Workspa
                                 <p className="text-sm font-medium">Enlace de invitación</p>
                                 <p className="text-xs text-muted-foreground">Comparte este enlace para invitar miembros</p>
                             </div>
-                            <Button variant="outline" onClick={handleCopyInviteLink}>
-                                {copied ? (
-                                    <>
-                                        <Check className="h-4 w-4 mr-2" />
-                                        Copiado
-                                    </>
+                            <Button variant="outline" onClick={handleCopyInviteLink} disabled={isGeneratingLink}>
+                                {isGeneratingLink ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : copied ? (
+                                    <Check className="h-4 w-4 mr-2" />
                                 ) : (
-                                    <>
-                                        <Copy className="h-4 w-4 mr-2" />
-                                        Copiar enlace
-                                    </>
+                                    <Copy className="h-4 w-4 mr-2" />
                                 )}
+                                {isGeneratingLink ? 'Generando...' : copied ? 'Copiado' : 'Copiar enlace'}
                             </Button>
                         </div>
+
+                        {/* Pending Invitations */}
+                        {invitations.length > 0 && (
+                            <>
+                                <Separator />
+                                <div>
+                                    <p className="text-sm font-medium mb-3 flex items-center gap-2">
+                                        <Clock className="h-4 w-4 text-muted-foreground" />
+                                        Invitaciones pendientes ({invitations.length})
+                                    </p>
+                                    <div className="space-y-2">
+                                        {invitations.map((inv) => (
+                                            <div key={inv.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                                                        <Mail className="h-4 w-4 text-orange-600" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-medium">
+                                                            {inv.email || 'Enlace abierto'}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Expira el {new Date(inv.expiresAt).toLocaleDateString('es-ES')}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant="secondary" className={roleConfig[inv.role].color}>
+                                                        {roleConfig[inv.role].label}
+                                                    </Badge>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-destructive hover:text-destructive"
+                                                        onClick={() => handleCancelInvitation(inv.id)}
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </CardContent>
                 </Card>
             )}

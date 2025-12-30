@@ -36,6 +36,7 @@ import {
 import { createClient } from "@/utils/supabase/client"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { WorkspaceSelector } from "./workspace-selector"
+import { NotificationBell } from "@/components/notifications/notification-bell"
 
 const sidebarItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
@@ -108,6 +109,7 @@ export function Sidebar() {
                         <span className="font-bold text-xl tracking-tight">Taskery</span>
                     </motion.div>
                 )}
+                {!collapsed && <NotificationBell />}
                 {collapsed && (
                     <div className="h-8 w-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm shrink-0">
                         <span className="text-white font-bold text-lg">T</span>
