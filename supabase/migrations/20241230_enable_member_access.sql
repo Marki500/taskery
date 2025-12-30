@@ -48,7 +48,7 @@ CREATE POLICY "Members can delete projects" ON projects
       SELECT 1 FROM workspace_members
       WHERE workspace_members.workspace_id = projects.workspace_id
       AND workspace_members.user_id = auth.uid()
-       -- Optional: restrict delete to admins only? uncomment next line if desired
+       -- Optional: restrict delete to admins only? uncomment next line if desiredaaa
        -- AND workspace_members.role = 'admin'
     )
   );
