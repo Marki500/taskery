@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server"
 import { revalidatePath } from "next/cache"
+import { getActiveWorkspace } from "../workspaces/actions"
 
 export interface Project {
     id: string
@@ -12,17 +13,28 @@ export interface Project {
     workspace_id: string
 }
 
-export async function getProjects(): Promise<Project[]> {
+export async function getProjects(workspaceId?: string): Promise<Project[]> {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return []
 
-    // For now, get all projects the user has access to
-    // In the future, this should filter by workspace membership
+    let targetWorkspaceId = workspaceId
+
+    if (!targetWorkspaceId) {
+        const activeWorkspace = await getActiveWorkspace()
+        if (activeWorkspace) {
+            targetWorkspaceId = activeWorkspace.id
+        }
+    }
+
+    if (!targetWorkspaceId) return []
+
+    // Fetch projects for the specific workspace
     const { data, error } = await supabase
         .from('projects')
         .select('*')
+        .eq('workspace_id', targetWorkspaceId)
         .order('created_at', { ascending: false })
 
     if (error) {
@@ -39,18 +51,27 @@ export async function createProject(name: string, description?: string) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
-    // First, ensure user has a workspace or create a default one
-    let workspaceId: string
+    // Use active workspace or fallback to default
+    let workspaceId: string | undefined
 
-    const { data: existingWorkspaces } = await supabase
-        .from('workspaces')
-        .select('id')
-        .eq('owner_id', user.id)
-        .limit(1)
+    const activeWorkspace = await getActiveWorkspace()
 
-    if (existingWorkspaces && existingWorkspaces.length > 0) {
-        workspaceId = existingWorkspaces[0].id
+    if (activeWorkspace) {
+        workspaceId = activeWorkspace.id
     } else {
+        // Fallback to finding one owned by user
+        const { data: existingWorkspaces } = await supabase
+            .from('workspaces')
+            .select('id')
+            .eq('owner_id', user.id)
+            .limit(1)
+
+        if (existingWorkspaces && existingWorkspaces.length > 0) {
+            workspaceId = existingWorkspaces[0].id
+        }
+    }
+
+    if (!workspaceId) {
         // Create a default workspace for this user
         const { data: newWorkspace, error: wsError } = await supabase
             .from('workspaces')

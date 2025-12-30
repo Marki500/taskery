@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { getUserWorkspaces, createWorkspace, Workspace } from '@/app/(dashboard)/workspaces/actions'
+import { getUserWorkspaces, createWorkspace, setActiveWorkspaceAction, getActiveWorkspace, Workspace } from '@/app/(dashboard)/workspaces/actions'
 import { toast } from 'sonner'
 
 interface WorkspaceSelectorProps {
@@ -33,7 +33,13 @@ export function WorkspaceSelector({ collapsed = false }: WorkspaceSelectorProps)
         try {
             const ws = await getUserWorkspaces()
             setWorkspaces(ws)
-            if (ws.length > 0 && !activeWorkspace) {
+
+            // Get valid active workspace from server (respects cookie)
+            const active = await getActiveWorkspace()
+
+            if (active) {
+                setActiveWorkspace(active)
+            } else if (ws.length > 0 && !activeWorkspace) {
                 setActiveWorkspace(ws[0])
             }
         } catch (error) {
@@ -66,11 +72,17 @@ export function WorkspaceSelector({ collapsed = false }: WorkspaceSelectorProps)
         }
     }
 
-    const handleSelectWorkspace = (workspace: Workspace) => {
+    const handleSelectWorkspace = async (workspace: Workspace) => {
         setActiveWorkspace(workspace)
         setIsOpen(false)
-        // TODO: Store in cookie/localStorage and refresh data
-        window.location.reload()
+
+        try {
+            await setActiveWorkspaceAction(workspace.id)
+            window.location.reload()
+        } catch (error) {
+            console.error('Error switching workspace', error)
+            toast.error('Error al cambiar de workspace')
+        }
     }
 
     if (isLoading && workspaces.length === 0) {

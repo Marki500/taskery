@@ -1,7 +1,9 @@
 'use server'
 
+
 import { createClient } from "@/utils/supabase/server"
 import { revalidatePath } from "next/cache"
+import { cookies } from "next/headers"
 
 export interface Workspace {
     id: string
@@ -53,9 +55,33 @@ export async function getActiveWorkspace(): Promise<Workspace | null> {
     const workspaces = await getUserWorkspaces()
     if (workspaces.length === 0) return null
 
+    // Check for workspace cookie
+    const cookieStore = await cookies()
+    const workspaceId = cookieStore.get('workspace_id')?.value
+
+    if (workspaceId) {
+        const selectedWorkspace = workspaces.find(w => w.id === workspaceId)
+        if (selectedWorkspace) {
+            return selectedWorkspace
+        }
+    }
+
     // For now, return the first workspace
     // Later we can implement workspace switching via cookies
     return workspaces[0]
+}
+
+// Set active workspace cookie
+export async function setActiveWorkspaceAction(workspaceId: string) {
+    const cookieStore = await cookies()
+    cookieStore.set('workspace_id', workspaceId, {
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30 // 30 days
+    })
+
+    revalidatePath('/', 'layout')
 }
 
 // Create a new workspace
