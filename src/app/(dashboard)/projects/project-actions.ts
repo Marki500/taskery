@@ -11,6 +11,9 @@ export interface Project {
     status: string
     created_at: string
     workspace_id: string
+    color?: string
+    icon?: string
+    url?: string | null
 }
 
 export async function getProjects(workspaceId?: string): Promise<Project[]> {
@@ -45,7 +48,7 @@ export async function getProjects(workspaceId?: string): Promise<Project[]> {
     return data || []
 }
 
-export async function createProject(name: string, description?: string) {
+export async function createProject(name: string, description?: string, color: string = 'indigo', icon: string = 'FolderKanban', url?: string) {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -96,7 +99,10 @@ export async function createProject(name: string, description?: string) {
             name: name,
             description: description || null,
             workspace_id: workspaceId,
-            status: 'active'
+            status: 'active',
+            color: color,
+            icon: icon,
+            url: url || null
         })
         .select()
         .single()
@@ -125,4 +131,28 @@ export async function getProjectById(id: string): Promise<Project | null> {
     }
 
     return data
+}
+
+export async function updateProject(id: string, name: string, description?: string | null, color?: string, icon?: string, url?: string | null) {
+    const supabase = await createClient()
+
+    const { error } = await supabase
+        .from('projects')
+        .update({
+            name,
+            description,
+            color,
+            icon,
+            url: url || null
+        })
+        .eq('id', id)
+
+    if (error) {
+        console.error('Error updating project:', error)
+        throw new Error('Failed to update project')
+    }
+
+    revalidatePath('/projects')
+    revalidatePath(`/projects/${id}`)
+    return { success: true }
 }

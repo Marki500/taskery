@@ -20,12 +20,12 @@ export function WeeklyChart() {
             <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                     <div>
-                        <CardTitle className="text-2xl font-bold">Productividad Semanal</CardTitle>
-                        <p className="text-muted-foreground mt-1">Tareas completadas por día</p>
+                        <CardTitle className="text-3xl font-extrabold tracking-tight">Productividad Semanal</CardTitle>
+                        <p className="text-muted-foreground text-lg mt-1 font-medium">Tareas completadas por día</p>
                     </div>
                     <div className="flex items-center gap-2 text-green-600 bg-green-100 dark:bg-green-900/30 px-3 py-1.5 rounded-full">
-                        <TrendingUp className="h-4 w-4" />
-                        <span className="text-sm font-semibold">+23%</span>
+                        <TrendingUp className="h-5 w-5" />
+                        <span className="text-base font-bold">+23%</span>
                     </div>
                 </div>
             </CardHeader>

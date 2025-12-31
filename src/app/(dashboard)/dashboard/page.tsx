@@ -1,8 +1,12 @@
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
-import { StatsCards } from "@/components/dashboard/widgets/stats-cards"
-import { WeeklyChart } from "@/components/dashboard/widgets/weekly-chart"
-import { DeadlineCalendar } from "@/components/dashboard/widgets/deadline-calendar"
+import { getDashboardStats } from "./actions"
+import { GreetingWidget } from "@/components/dashboard/widgets/greeting-widget"
+import { MetricCards } from "@/components/dashboard/widgets/metric-cards"
+import { ProductivityChart } from "@/components/dashboard/widgets/productivity-chart"
+import { FocusList } from "@/components/dashboard/widgets/focus-list"
+import { TaskDistributionChart } from "@/components/dashboard/widgets/task-distribution-chart"
+import { TimeTrackingWidget } from "@/components/dashboard/widgets/time-tracking-widget"
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -13,41 +17,49 @@ export default async function DashboardPage() {
         redirect('/login')
     }
 
+    const stats = await getDashboardStats()
+
+    // Fallback if stats fail
+    if (!stats) {
+        return <div className="p-8">Cargando estadísticas...</div>
+    }
+
     return (
-        <div className="space-y-8 max-w-7xl mx-auto">
-            {/* Header */}
-            <div>
-                <h1 className="text-4xl font-bold tracking-tight">
-                    Hola, {user.email?.split('@')[0]} 👋
-                </h1>
-                <p className="text-muted-foreground text-lg mt-1">
-                    Aquí tienes el resumen de tu actividad.
-                </p>
+        <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 relative">
+            {/* Subtle background pattern */}
+            <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_30%_20%,rgba(99,102,241,0.03),transparent_50%),radial-gradient(circle_at_70%_80%,rgba(168,85,247,0.03),transparent_50%)]" />
+
+            {/* 1. Greeting Section */}
+            <GreetingWidget
+                userName={user.email?.split('@')[0] || 'Usuario'}
+                pendingCount={stats.pendingTasks}
+                productivityScore={stats.productivityScore}
+            />
+
+            {/* 2. Key Metrics Row */}
+            <MetricCards
+                projects={stats.totalProjects}
+                pending={stats.pendingTasks}
+                completed={stats.completedTasks}
+            />
+
+            {/* 3. Main Bento Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Chart takes 2 columns */}
+                <div className="lg:col-span-2">
+                    <ProductivityChart data={stats.weeklyActivity} />
+                </div>
+
+                {/* Focus List takes 1 column */}
+                <div className="lg:col-span-1 min-h-[400px]">
+                    <FocusList tasks={stats.upcomingDeadlines} />
+                </div>
             </div>
 
-            {/* Stats Row */}
-            <StatsCards />
-            {/* Deadline Calendar - Full Width */}
-            <DeadlineCalendar />
-
-            {/* Main Content Grid */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <WeeklyChart />
-
-                {/* Quick Actions Card */}
-                <div className="rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 shadow-lg p-6 col-span-1 border-0">
-                    <h3 className="text-xl font-bold leading-none tracking-tight mb-5">Acciones Rápidas</h3>
-                    <div className="space-y-4">
-                        <a href="/projects" className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl hover:shadow-md transition-all border border-slate-200 dark:border-slate-700 group">
-                            <span className="font-semibold text-lg">Ver Proyectos</span>
-                            <span className="text-primary text-2xl group-hover:translate-x-1 transition-transform">→</span>
-                        </a>
-                        <a href="/tracking" className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl hover:shadow-md transition-all border border-slate-200 dark:border-slate-700 group">
-                            <span className="font-semibold text-lg">Historial de Tiempo</span>
-                            <span className="text-primary text-2xl group-hover:translate-x-1 transition-transform">→</span>
-                        </a>
-                    </div>
-                </div>
+            {/* 4. Secondary Grid - Distribution & Time Tracking */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <TaskDistributionChart data={stats.tasksByStatus} />
+                <TimeTrackingWidget totalHours={stats.totalHoursThisWeek} />
             </div>
         </div>
     )

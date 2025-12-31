@@ -1,11 +1,8 @@
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
-import Link from "next/link"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { FolderKanban, Clock, ArrowRight } from "lucide-react"
 import { getProjects } from "./project-actions"
 import { NewProjectDialog } from "./new-project-dialog"
+import { ProjectsList } from "./projects-list"
 
 export default async function ProjectsPage() {
     const supabase = await createClient()
@@ -19,60 +16,26 @@ export default async function ProjectsPage() {
     const projects = await getProjects()
 
     return (
-        <div className="space-y-8 max-w-7xl mx-auto">
+        <div className="space-y-8 max-w-7xl mx-auto animate-in fade-in duration-500">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-4xl font-bold tracking-tight">Proyectos</h1>
-                    <p className="text-muted-foreground text-lg mt-1">Gestiona y organiza tu trabajo.</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-3xl bg-gradient-to-br from-white/80 to-slate-50/80 dark:from-slate-900/90 dark:to-slate-800/90 backdrop-blur-xl border border-slate-200/60 dark:border-indigo-500/30 shadow-2xl shadow-indigo-100/20 dark:shadow-indigo-500/10 relative overflow-hidden">
+                {/* Ambient Neon Background Glow */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2" />
+
+                <div className="space-y-2 relative z-10">
+                    <h1 className="text-5xl font-black tracking-tight text-slate-800 dark:text-white">
+                        Proyectos
+                    </h1>
+                    <p className="text-slate-500 dark:text-slate-400 text-lg font-medium flex items-center gap-2">
+                        Gestiona y organiza tu <span className="text-indigo-600 dark:text-indigo-400 font-bold border-b-2 border-indigo-200 dark:border-indigo-500/30">universo de trabajo</span>.
+                    </p>
                 </div>
-                <NewProjectDialog />
+                <div className="relative z-10">
+                    {projects.length >= 0 && <NewProjectDialog />}
+                </div>
             </div>
 
-            {/* Projects Grid */}
-            {projects.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed rounded-2xl bg-muted/20">
-                    <FolderKanban className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                    <h3 className="text-2xl font-semibold text-muted-foreground">Sin proyectos todavía</h3>
-                    <p className="text-muted-foreground mt-2 mb-6">Crea tu primer proyecto para empezar a organizar tus tareas.</p>
-                    <NewProjectDialog />
-                </div>
-            ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {projects.map((project) => (
-                        <Link key={project.id} href={`/projects/${project.id}`}>
-                            <Card className="h-full hover:shadow-xl hover:border-primary/30 transition-all cursor-pointer group rounded-2xl">
-                                <CardHeader className="pb-3">
-                                    <div className="flex items-start justify-between">
-                                        <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-sm">
-                                            <FolderKanban className="h-6 w-6 text-white" />
-                                        </div>
-                                        <Badge variant={project.status === 'active' ? 'default' : 'secondary'} className="uppercase text-xs tracking-wider">
-                                            {project.status === 'active' ? 'Activo' : project.status}
-                                        </Badge>
-                                    </div>
-                                    <CardTitle className="text-2xl mt-4 group-hover:text-primary transition-colors">
-                                        {project.name}
-                                    </CardTitle>
-                                    <CardDescription className="text-base line-clamp-2">
-                                        {project.description || 'Sin descripción'}
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardFooter className="flex items-center justify-between text-sm text-muted-foreground pt-4 border-t">
-                                    <div className="flex items-center gap-1">
-                                        <Clock className="h-4 w-4" />
-                                        <span>{new Date(project.created_at).toLocaleDateString('es-ES')}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 text-primary opacity-0 group-hover:opacity-100 transition-opacity font-semibold">
-                                        <span>Abrir</span>
-                                        <ArrowRight className="h-4 w-4" />
-                                    </div>
-                                </CardFooter>
-                            </Card>
-                        </Link>
-                    ))}
-                </div>
-            )}
+            <ProjectsList initialProjects={projects} />
         </div>
     )
 }

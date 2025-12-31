@@ -16,7 +16,8 @@ import {
     ChevronRight,
     Search,
     UserCircle,
-    LayoutDashboard
+    LayoutDashboard,
+    CalendarDays
 } from "lucide-react"
 
 import {
@@ -41,6 +42,7 @@ import { NotificationBell } from "@/components/notifications/notification-bell"
 const sidebarItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
     { icon: FolderKanban, label: "Proyectos", href: "/projects" },
+    { icon: CalendarDays, label: "Calendario", href: "/calendar" },
     { icon: Timer, label: "Tracking", href: "/tracking" },
     { icon: Settings, label: "Configuración", href: "/settings" },
 ]
@@ -128,11 +130,11 @@ export function Sidebar() {
                 {/* Search Placeholder (Optional) */}
                 {!collapsed && (
                     <div className="mb-4 relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
                         <input
                             type="text"
                             placeholder="Buscar..."
-                            className="w-full bg-muted/50 rounded-md py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary/20"
+                            className="w-full bg-muted/60 rounded-xl py-3 pl-11 pr-4 text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 border-transparent focus:border-primary/30 transition-all"
                         />
                     </div>
                 )}
@@ -156,9 +158,9 @@ export function Sidebar() {
                                     <AvatarFallback className="bg-gradient-to-br from-blue-400 to-blue-600 text-white font-medium">YO</AvatarFallback>
                                 </Avatar>
                                 {!collapsed && (
-                                    <div className="flex flex-col items-start text-sm truncate">
-                                        <span className="font-semibold text-foreground">Mi Cuenta</span>
-                                        <span className="text-xs text-muted-foreground">Pro Plan</span>
+                                    <div className="flex flex-col items-start truncate">
+                                        <span className="font-bold text-foreground text-sm">Mi Cuenta</span>
+                                        <span className="text-[11px] font-black uppercase tracking-wider text-primary">Pro Plan</span>
                                     </div>
                                 )}
                             </div>

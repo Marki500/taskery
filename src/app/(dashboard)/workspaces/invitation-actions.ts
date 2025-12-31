@@ -196,6 +196,52 @@ export async function getWorkspaceInvitations(workspaceId: string): Promise<Invi
     }))
 }
 
+export interface AcceptedInvitation {
+    id: string
+    email: string | null
+    role: 'admin' | 'member' | 'client'
+    inviterName: string
+    acceptedAt: string
+    createdAt: string
+    acceptedByName?: string
+    acceptedByEmail?: string
+}
+
+/**
+ * Get all accepted invitations for a workspace (invitation history)
+ */
+export async function getAcceptedInvitations(workspaceId: string): Promise<AcceptedInvitation[]> {
+    const supabase = await createClient()
+
+    const { data, error } = await supabase
+        .from('workspace_invitations')
+        .select(`
+            id,
+            email,
+            role,
+            accepted_at,
+            created_at,
+            inviter:profiles!invited_by(full_name, email)
+        `)
+        .eq('workspace_id', workspaceId)
+        .not('accepted_at', 'is', null)
+        .order('accepted_at', { ascending: false })
+
+    if (error || !data) {
+        console.error('Error fetching accepted invitations:', error)
+        return []
+    }
+
+    return data.map((inv: any) => ({
+        id: inv.id,
+        email: inv.email,
+        role: inv.role,
+        inviterName: inv.inviter?.full_name || inv.inviter?.email || 'Desconocido',
+        acceptedAt: inv.accepted_at,
+        createdAt: inv.created_at,
+    }))
+}
+
 /**
  * Get invitation details by token (for the accept page)
  */
@@ -246,10 +292,12 @@ export async function getInvitationByToken(token: string): Promise<{
     }
 }
 
+import { setActiveWorkspaceAction } from './actions'
+
 /**
  * Accept an invitation and join the workspace
  */
-export async function acceptInvitation(token: string): Promise<{ success?: boolean; error?: string }> {
+export async function acceptInvitation(token: string): Promise<{ success?: boolean; workspaceId?: string; error?: string }> {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -326,10 +374,14 @@ export async function acceptInvitation(token: string): Promise<{ success?: boole
         .update({ accepted_at: new Date().toISOString() })
         .eq('id', invitation.id)
 
+    // Set as active workspace so the user enters directly
+    await setActiveWorkspaceAction(invitation.workspace_id)
+
+    revalidatePath('/', 'layout')
     revalidatePath('/settings')
     revalidatePath('/projects')
 
-    return { success: true }
+    return { success: true, workspaceId: invitation.workspace_id }
 }
 
 /**

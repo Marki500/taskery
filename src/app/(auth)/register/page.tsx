@@ -70,9 +70,9 @@ export default function RegisterPage() {
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-50/50 dark:bg-zinc-900">
             <Card className="w-full max-w-md">
-                <CardHeader>
-                    <CardTitle className="text-2xl font-bold">Unirse a Taskery</CardTitle>
-                    <CardDescription>
+                <CardHeader className="space-y-2">
+                    <CardTitle className="text-3xl font-black tracking-tight">Unirse a Taskery</CardTitle>
+                    <CardDescription className="text-lg font-medium text-muted-foreground">
                         Crea una cuenta para empezar a colaborar.
                     </CardDescription>
                 </CardHeader>

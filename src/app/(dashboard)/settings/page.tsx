@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 import { WorkspaceSettings } from "./workspace-settings"
 import { getActiveWorkspace, getWorkspaceMembersWithDetails } from "@/app/(dashboard)/workspaces/actions"
-import { getWorkspaceInvitations } from "@/app/(dashboard)/workspaces/invitation-actions"
+import { getWorkspaceInvitations, getAcceptedInvitations } from "@/app/(dashboard)/workspaces/invitation-actions"
 
 export default async function SettingsPage() {
     const supabase = await createClient()
@@ -22,9 +22,10 @@ export default async function SettingsPage() {
         )
     }
 
-    const [members, invitations] = await Promise.all([
+    const [members, invitations, acceptedInvitations] = await Promise.all([
         getWorkspaceMembersWithDetails(workspace.id),
-        getWorkspaceInvitations(workspace.id)
+        getWorkspaceInvitations(workspace.id),
+        getAcceptedInvitations(workspace.id)
     ])
 
     return (
@@ -33,6 +34,7 @@ export default async function SettingsPage() {
             members={members}
             currentUserId={user.id}
             pendingInvitations={invitations}
+            acceptedInvitations={acceptedInvitations}
         />
     )
 }

@@ -5,6 +5,7 @@ import { getProjectById } from "../project-actions"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { EditProjectDialog } from "../edit-project-dialog"
 
 interface ProjectPageProps {
     params: Promise<{
@@ -37,15 +38,34 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
                     </Link>
-                    <div>
-                        <h1 className="text-4xl font-bold tracking-tight text-foreground">
-                            {project.name}
-                        </h1>
-                        <p className="text-muted-foreground text-lg mt-1">
-                            {project.description || 'Tablero de tareas'}
-                        </p>
+                    <div className="flex items-center gap-4">
+                        {project.url && (() => {
+                            let domain = project.url;
+                            try {
+                                const urlStr = project.url.startsWith('http') ? project.url : `https://${project.url}`;
+                                domain = new URL(urlStr).hostname;
+                            } catch (e) {
+                                // Fallback to raw url or whatever
+                            }
+                            return (
+                                <img
+                                    src={`https://www.google.com/s2/favicons?domain=${domain}&sz=128`}
+                                    alt=""
+                                    className="w-10 h-10 object-contain p-1.5 bg-white rounded-lg border shadow-sm"
+                                />
+                            );
+                        })()}
+                        <div>
+                            <h1 className="text-5xl font-extrabold tracking-tight text-foreground">
+                                {project.name}
+                            </h1>
+                            <p className="text-muted-foreground text-xl mt-2 font-medium">
+                                {project.description || 'Tablero de tareas'}
+                            </p>
+                        </div>
                     </div>
                 </div>
+                <EditProjectDialog project={project} />
             </div>
 
             {/* The Kanban Board Area */}

@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+// Kanban Board Component
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
     DndContext,
     DragOverlay,
@@ -79,6 +80,29 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
         })
     )
 
+    // Memoize tasks by column to avoid O(N) filtering in every render for each column
+    const tasksByColumn = useMemo(() => {
+        const grouped: Record<string, Task[]> = {
+            'todo': [],
+            'in-progress': [],
+            'review': [],
+            'done': []
+        }
+
+        tasks.forEach(task => {
+            if (grouped[task.columnId]) {
+                grouped[task.columnId].push(task)
+            } else {
+                // Handle tasks with invalid/unknown columnIds by putting them in todo or ignoring
+                // For now, let's put them in todo as fallback if valid status
+                if (!grouped['todo']) grouped['todo'] = []
+                // Or just ignore if we want strictness
+                // grouped['todo'].push(task)
+            }
+        })
+        return grouped
+    }, [tasks])
+
     if (isLoading) {
         return <div className="p-10 text-center text-muted-foreground animate-pulse">Cargando tablero...</div>
     }
@@ -103,7 +127,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
                             key={col.id}
                             id={col.id}
                             title={col.title}
-                            tasks={tasks.filter(t => t.columnId === col.id)}
+                            tasks={tasksByColumn[col.id] || []}
                             color={col.color}
                             onTaskUpdated={loadTasks}
                         />
@@ -140,32 +164,41 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
 
         // Drop over another task
         if (isActiveTask && isOverTask) {
-            setTasks((tasks) => {
-                const activeIndex = tasks.findIndex((t) => t.id === activeId)
-                const overIndex = tasks.findIndex((t) => t.id === overId)
+            setTasks((prevTasks) => {
+                const activeIndex = prevTasks.findIndex((t) => t.id === activeId)
+                const overIndex = prevTasks.findIndex((t) => t.id === overId)
 
-                // If they are in different columns, we update the columnId immediately (visual feedback)
-                if (tasks[activeIndex].columnId !== tasks[overIndex].columnId) {
-                    tasks[activeIndex].columnId = tasks[overIndex].columnId
+                // Create a shallow copy of the tasks array
+                const newTasks = [...prevTasks]
+
+                // If they are in different columns, update the columnId
+                if (newTasks[activeIndex].columnId !== newTasks[overIndex].columnId) {
+                    // Create a copy of the task to avoid direct mutation
+                    newTasks[activeIndex] = {
+                        ...newTasks[activeIndex],
+                        columnId: newTasks[overIndex].columnId
+                    }
                 }
 
-                return arrayMove(tasks, activeIndex, overIndex)
+                return arrayMove(newTasks, activeIndex, overIndex)
             })
         }
 
         // Drop over an empty column
         if (isActiveTask && isOverColumn) {
-            setTasks((tasks) => {
-                const activeIndex = tasks.findIndex((t) => t.id === activeId)
+            setTasks((prevTasks) => {
+                const activeIndex = prevTasks.findIndex((t) => t.id === activeId)
 
-                if (tasks[activeIndex].columnId !== overId) {
-                    tasks[activeIndex].columnId = overId as string
-                    // Move to the end of the new column (optional, standard arrayMove doesn't apply here as index is relative to whole list)
-                    // For simplicity in single list state, we just change columnId. 
-                    // To reorder visually inside new column, the map render handles it.
-                    return [...tasks]
+                if (prevTasks[activeIndex].columnId !== overId) {
+                    const newTasks = [...prevTasks]
+                    // Create a copy of the task
+                    newTasks[activeIndex] = {
+                        ...newTasks[activeIndex],
+                        columnId: overId as string
+                    }
+                    return newTasks
                 }
-                return tasks
+                return prevTasks
             })
         }
     }
@@ -181,60 +214,38 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
         const activeId = active.id as string
         const overId = over.id as string
 
-        // Ensure we capture the final state for the moved task
+        // Find the task in the *current* state (which might have been updated by DragOver)
         const task = tasks.find(t => t.id === activeId)
 
         if (task) {
-            // We need to determine the final column. 
-            // If dropped on a Column, overId is the columnId.
-            // If dropped on a Task, we look up that task's columnId.
-            let finalColumnId = overId
-            const overTask = tasks.find(t => t.id === overId)
-            if (overTask) {
-                finalColumnId = overTask.columnId
-            }
-
-            // Optimistic update already happened in DragOver for visual smoothness.
-            // Now we persist to DB.
-            // Check if column actually changed for the active item in our state
-            if (task.columnId !== finalColumnId) {
-                // This case should ideally represent reordering within same column too, 
-                // but for now we focus on status change persistence.
-            }
-
-            // Actually, since DragOver mutates 'tasks' state, 'task' object ref might be stale or updated? 
-            // React state updates are scheduled. The 'tasks' array in scope is from render start.
-            // However, for the DB call, we just need to know where it ended up.
-            // Simpler approach: updateTaskStatus(activeId, finalColumnId)
-
-            // Wait, handleDragOver logic creates visual change.
-            // We should trust the visual state essentially.
-
-            // Let's perform the server action:
-            // Note: DragOver handles visual 'columnId' update on the fly. 
-            // The task object inside 'tasks' array has the NEW columnId by the time DragEnd fires?
-            // No, DragOver calls setTasks. DragEnd closes the loop.
-
-            // We need to find the task in the *current* tasks state to know its column.
-            // Since we can't easily access the "next" state inside the event handler without using a ref or similar,
-            // we rely on the logic that determined the visual drop.
-
-            // Robust way: Check if over is a column or task, derive new Status.
+            // Determine the intended destination status logic
+            // (Note: DragOver has likely already visually moved it, but we confirm logic here)
             let newStatus = overId
+
+            // If dropping on a column directly
             if (columns.find(c => c.id === overId)) {
                 newStatus = overId
-            } else {
+            }
+            // If dropping on a task
+            else {
                 const overTaskItem = tasks.find(t => t.id === overId)
-                if (overTaskItem) newStatus = overTaskItem.columnId
+                if (overTaskItem) {
+                    newStatus = overTaskItem.columnId
+                }
             }
 
-            // Only update if valid status
+            // Perform server update
+            // We use the derived newStatus to be sure, although visuals are already optimistic
             if (['todo', 'in-progress', 'review', 'done'].includes(newStatus)) {
                 try {
+                    // Only call API if we suspect a change or just to enforce consistency
+                    // Optimistic update handled by DragOver looks good, this saves it.
                     await updateTaskStatus(activeId, newStatus)
-                    toast.success("Tarea actualizada")
+                    // No toast success needed for every drag, acts as background sync
                 } catch (e) {
                     toast.error("Error al guardar cambios")
+                    // If error, reload tasks to revert to server state
+                    loadTasks()
                 }
             }
         }

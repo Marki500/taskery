@@ -63,9 +63,9 @@ export default function LoginPage() {
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-50/50 dark:bg-zinc-900">
             <Card className="w-full max-w-md">
-                <CardHeader>
-                    <CardTitle className="text-2xl font-bold">Bienvenido a Taskery</CardTitle>
-                    <CardDescription>
+                <CardHeader className="space-y-2">
+                    <CardTitle className="text-3xl font-black tracking-tight">Bienvenido a Taskery</CardTitle>
+                    <CardDescription className="text-lg font-medium text-muted-foreground">
                         Inicia sesión para gestionar tus proyectos.
                     </CardDescription>
                 </CardHeader>

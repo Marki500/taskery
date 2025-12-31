@@ -37,17 +37,50 @@ export async function getProjectTasks(projectId: string): Promise<Task[]> {
 
     // Fetch time entries for all tasks in this project
     const taskIds = tasks.map((t: any) => t.id)
-    const { data: timeEntries } = await supabase
-        .from('time_entries')
-        .select('task_id, duration')
-        .in('task_id', taskIds)
-        .not('duration', 'is', null)
+
+    const [timeEntriesResult, subtasksResult, commentsResult] = await Promise.all([
+        supabase
+            .from('time_entries')
+            .select('task_id, duration')
+            .in('task_id', taskIds)
+            .not('duration', 'is', null),
+        supabase
+            .from('subtasks')
+            .select('task_id, completed')
+            .in('task_id', taskIds),
+        supabase
+            .from('task_comments')
+            .select('task_id')
+            .in('task_id', taskIds)
+    ])
 
     // Calculate total time per task
     const timeByTask: Record<string, number> = {}
-    if (timeEntries) {
-        timeEntries.forEach((entry: any) => {
+    if (timeEntriesResult.data) {
+        timeEntriesResult.data.forEach((entry: any) => {
             timeByTask[entry.task_id] = (timeByTask[entry.task_id] || 0) + (entry.duration || 0)
+        })
+    }
+
+    // Calculate subtask counts per task
+    const subtasksByTask: Record<string, { total: number; completed: number }> = {}
+    if (subtasksResult.data) {
+        subtasksResult.data.forEach((s: any) => {
+            if (!subtasksByTask[s.task_id]) {
+                subtasksByTask[s.task_id] = { total: 0, completed: 0 }
+            }
+            subtasksByTask[s.task_id].total++
+            if (s.completed) {
+                subtasksByTask[s.task_id].completed++
+            }
+        })
+    }
+
+    // Calculate comment counts per task
+    const commentsByTask: Record<string, number> = {}
+    if (commentsResult.data) {
+        commentsResult.data.forEach((c: any) => {
+            commentsByTask[c.task_id] = (commentsByTask[c.task_id] || 0) + 1
         })
     }
 
@@ -57,12 +90,16 @@ export async function getProjectTasks(projectId: string): Promise<Task[]> {
         description: task.description || null,
         columnId: task.status,
         tag: task.tag,
+        tagColor: task.tag_color || null,
         projectId: projectId,
         totalTime: timeByTask[task.id] || 0,
         deadline: task.deadline || null,
-        assignedTo: task.assigned_to || null
+        assignedTo: task.assigned_to || null,
+        subtaskCount: subtasksByTask[task.id] || undefined,
+        commentCount: commentsByTask[task.id] || 0
     }))
 }
+
 
 export interface WorkspaceMember {
     id: string
@@ -136,6 +173,7 @@ export interface TaskUpdateData {
     title: string
     description?: string | null
     tag?: string | null
+    tagColor?: string | null
     deadline?: string | null
     assignedTo?: string | null
     status?: string
@@ -148,6 +186,7 @@ export async function updateTask(taskId: string, data: TaskUpdateData) {
         title: data.title,
         description: data.description || null,
         tag: data.tag || null,
+        tag_color: data.tagColor || null,
         deadline: data.deadline || null,
         assigned_to: data.assignedTo || null
     }

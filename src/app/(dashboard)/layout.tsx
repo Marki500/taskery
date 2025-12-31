@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { FloatingTimer } from "@/components/timer/floating-timer"
+import { CommandMenu } from "@/components/command-menu"
 
 export default function DashboardLayout({
     children,
@@ -13,6 +14,7 @@ export default function DashboardLayout({
                 {children}
             </main>
             <FloatingTimer />
+            <CommandMenu />
         </div>
     )
 }

@@ -85,23 +85,23 @@ export function DeadlineCalendar() {
         <Card className="rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 shadow-lg border-0">
             <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl font-bold flex items-center gap-2">
-                        <CalendarIcon className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-2xl font-extrabold flex items-center gap-2">
+                        <CalendarIcon className="h-6 w-6 text-primary" />
                         Calendario de Entregas
                     </CardTitle>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={goToToday}>
+                    <div className="flex items-center gap-3">
+                        <Button variant="outline" size="default" onClick={goToToday} className="font-bold">
                             Hoy
                         </Button>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2">
                             <Button variant="ghost" size="icon" onClick={goToPreviousMonth}>
-                                <ChevronLeft className="h-4 w-4" />
+                                <ChevronLeft className="h-5 w-5" />
                             </Button>
-                            <span className="font-semibold text-lg min-w-[150px] text-center capitalize">
+                            <span className="font-extrabold text-xl min-w-[180px] text-center capitalize tracking-tight">
                                 {format(currentMonth, "MMMM yyyy", { locale: es })}
                             </span>
                             <Button variant="ghost" size="icon" onClick={goToNextMonth}>
-                                <ChevronRight className="h-4 w-4" />
+                                <ChevronRight className="h-5 w-5" />
                             </Button>
                         </div>
                     </div>
@@ -113,7 +113,7 @@ export function DeadlineCalendar() {
                     {weekDays.map(dayName => (
                         <div
                             key={dayName}
-                            className="text-center py-2 text-sm font-semibold text-muted-foreground"
+                            className="text-center py-3 text-base font-bold text-muted-foreground uppercase tracking-wider"
                         >
                             {dayName}
                         </div>
@@ -141,9 +141,9 @@ export function DeadlineCalendar() {
                             >
                                 {/* Day number */}
                                 <div className={cn(
-                                    "text-sm font-medium mb-1",
+                                    "text-base font-bold mb-1.5",
                                     isCurrentDay
-                                        ? "text-primary font-bold"
+                                        ? "text-primary"
                                         : isCurrentMonth
                                             ? "text-foreground"
                                             : "text-muted-foreground/50"
@@ -158,7 +158,7 @@ export function DeadlineCalendar() {
                                             key={task.id}
                                             href={`/projects/${task.projectId}`}
                                             className={cn(
-                                                "block text-xs px-1.5 py-1 rounded-md truncate border-t-2 transition-all",
+                                                "block text-sm px-2 py-1.5 rounded-md truncate border-t-2 transition-all font-medium",
                                                 "bg-white dark:bg-slate-700 shadow-sm hover:shadow-md hover:scale-[1.02] cursor-pointer",
                                                 statusTopBorderColors[task.status] || 'border-t-gray-400',
                                                 task.status === 'done' && "opacity-60 line-through",
@@ -183,20 +183,20 @@ export function DeadlineCalendar() {
                 {/* Legend */}
                 <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                        <span className="text-xs text-muted-foreground">Por hacer</span>
+                        <div className="w-4 h-4 rounded-full bg-yellow-500" />
+                        <span className="text-sm font-medium text-muted-foreground">Por hacer</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-blue-500" />
-                        <span className="text-xs text-muted-foreground">En progreso</span>
+                        <div className="w-4 h-4 rounded-full bg-blue-500" />
+                        <span className="text-sm font-medium text-muted-foreground">En progreso</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-purple-500" />
-                        <span className="text-xs text-muted-foreground">Revisión</span>
+                        <div className="w-4 h-4 rounded-full bg-purple-500" />
+                        <span className="text-sm font-medium text-muted-foreground">Revisión</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-green-500" />
-                        <span className="text-xs text-muted-foreground">Completada</span>
+                        <div className="w-4 h-4 rounded-full bg-green-500" />
+                        <span className="text-sm font-medium text-muted-foreground">Completada</span>
                     </div>
                 </div>
             </CardContent>

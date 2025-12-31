@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { SortableContext } from "@dnd-kit/sortable"
 import { useDroppable } from "@dnd-kit/core"
 import { Task, TaskCard } from "./task-card"
@@ -20,7 +21,7 @@ const colorMap: Record<string, { bg: string, dot: string, badge: string }> = {
     'bg-green-500': { bg: 'bg-green-50 dark:bg-green-950/30', dot: 'bg-green-500', badge: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' },
 }
 
-export function KanbanColumn({ id, title, tasks, color = "bg-muted/50", onTaskUpdated }: KanbanColumnProps) {
+function KanbanColumnComponent({ id, title, tasks, color = "bg-muted/50", onTaskUpdated }: KanbanColumnProps) {
     const { setNodeRef, isOver } = useDroppable({
         id: id,
         data: {
@@ -29,27 +30,27 @@ export function KanbanColumn({ id, title, tasks, color = "bg-muted/50", onTaskUp
         },
     })
 
-    const taskIds = tasks.map(t => t.id)
+    const taskIds = React.useMemo(() => tasks.map(t => t.id), [tasks])
     const colorScheme = colorMap[color] || { bg: 'bg-muted/30', dot: 'bg-muted', badge: 'bg-muted text-muted-foreground' }
 
     return (
         <div
             ref={setNodeRef}
-            className="flex flex-col flex-1 min-w-[350px] shrink-0 gap-3"
+            className="flex flex-col flex-1 min-w-[360px] shrink-0 gap-3"
         >
             {/* Column Header */}
             <div className={cn(
-                "flex items-center justify-between p-4 rounded-xl transition-all",
+                "flex items-center justify-between p-5 rounded-2xl transition-all shadow-sm border border-transparent hover:border-border/50",
                 colorScheme.bg
             )}>
                 <div className="flex items-center gap-3">
-                    <div className={cn("h-4 w-4 rounded-full shadow-sm", colorScheme.dot)} />
-                    <h3 className="font-bold text-lg tracking-tight">
+                    <div className={cn("h-3 w-3 rounded-full shadow-sm ring-2 ring-white/50", colorScheme.dot)} />
+                    <h3 className="font-extrabold text-[17px] tracking-tight uppercase text-foreground/80">
                         {title}
                     </h3>
                 </div>
                 <span className={cn(
-                    "text-sm font-bold px-3 py-1 rounded-full",
+                    "text-xs font-bold px-3 py-1 rounded-full shadow-sm",
                     colorScheme.badge
                 )}>
                     {tasks.length}
@@ -58,11 +59,11 @@ export function KanbanColumn({ id, title, tasks, color = "bg-muted/50", onTaskUp
 
             {/* Task List */}
             <div className={cn(
-                "flex-1 rounded-xl p-3 border-2 transition-all min-h-[500px]",
-                isOver ? "border-primary bg-primary/5" : "border-transparent bg-muted/10"
+                "flex-1 rounded-2xl p-2 transition-all min-h-[500px]",
+                isOver ? "bg-primary/5 ring-2 ring-primary/20 ring-inset" : "bg-muted/10"
             )}>
                 <SortableContext items={taskIds}>
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-3 pb-4">
                         {tasks.map(task => (
                             <TaskCard key={task.id} task={task} onTaskUpdated={onTaskUpdated} />
                         ))}
@@ -71,13 +72,15 @@ export function KanbanColumn({ id, title, tasks, color = "bg-muted/50", onTaskUp
 
                 {tasks.length === 0 && (
                     <div className={cn(
-                        "h-full min-h-[200px] flex items-center justify-center text-lg border-2 border-dashed rounded-xl m-2 transition-colors",
-                        isOver ? "border-primary/50 text-primary/50" : "border-muted-foreground/10 text-muted-foreground/20"
+                        "h-[150px] flex flex-col gap-2 items-center justify-center text-muted-foreground/40 border-2 border-dashed rounded-xl m-2 transition-colors",
+                        isOver ? "border-primary/50 text-primary/50" : "border-muted-foreground/10"
                     )}>
-                        Soltar aquí
+                        <span className="text-sm font-medium">Vacío</span>
                     </div>
                 )}
             </div>
         </div>
     )
 }
+
+export const KanbanColumn = React.memo(KanbanColumnComponent)

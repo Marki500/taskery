@@ -227,3 +227,239 @@ export async function getWorkspaceMembersWithDetails(workspaceId: string) {
         }
     })
 }
+
+// Delete a workspace (only owner can delete)
+export async function deleteWorkspace(workspaceId: string): Promise<{ success?: boolean; error?: string }> {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'No autenticado' }
+
+    // Verify user is the owner of this workspace
+    const { data: workspace } = await supabase
+        .from('workspaces')
+        .select('owner_id')
+        .eq('id', workspaceId)
+        .single()
+
+    if (!workspace) {
+        return { error: 'Workspace no encontrado' }
+    }
+
+    if (workspace.owner_id !== user.id) {
+        return { error: 'Solo el propietario puede eliminar el workspace' }
+    }
+
+    // Delete the workspace (cascade will handle members, tasks, etc.)
+    const { error } = await supabase
+        .from('workspaces')
+        .delete()
+        .eq('id', workspaceId)
+
+    if (error) {
+        console.error('Error deleting workspace:', error)
+        return { error: 'Error al eliminar el workspace' }
+    }
+
+    // Clear the workspace cookie if it was the active one
+    const cookieStore = await cookies()
+    const currentWorkspaceId = cookieStore.get('workspace_id')?.value
+    if (currentWorkspaceId === workspaceId) {
+        cookieStore.delete('workspace_id')
+    }
+
+    revalidatePath('/', 'layout')
+    return { success: true }
+}
+
+// Update a member's role
+export async function updateMemberRole(
+    workspaceId: string,
+    memberId: string,
+    newRole: 'admin' | 'member' | 'client'
+): Promise<{ success?: boolean; error?: string }> {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'No autenticado' }
+
+    // Verify current user is admin of this workspace
+    const { data: currentMembership } = await supabase
+        .from('workspace_members')
+        .select('role')
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', user.id)
+        .single()
+
+    if (!currentMembership || currentMembership.role !== 'admin') {
+        return { error: 'No tienes permisos para cambiar roles' }
+    }
+
+    // Can't change owner's role
+    const { data: workspace } = await supabase
+        .from('workspaces')
+        .select('owner_id')
+        .eq('id', workspaceId)
+        .single()
+
+    if (workspace?.owner_id === memberId) {
+        return { error: 'No puedes cambiar el rol del propietario' }
+    }
+
+    // Update the role
+    const { error } = await supabase
+        .from('workspace_members')
+        .update({ role: newRole })
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', memberId)
+
+    if (error) {
+        console.error('Error updating member role:', error)
+        return { error: 'Error al actualizar el rol' }
+    }
+
+    revalidatePath('/', 'layout')
+    return { success: true }
+}
+
+// Remove a member from workspace
+export async function removeMember(
+    workspaceId: string,
+    memberId: string
+): Promise<{ success?: boolean; error?: string }> {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'No autenticado' }
+
+    // Verify current user is admin of this workspace
+    const { data: currentMembership } = await supabase
+        .from('workspace_members')
+        .select('role')
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', user.id)
+        .single()
+
+    if (!currentMembership || currentMembership.role !== 'admin') {
+        return { error: 'No tienes permisos para eliminar miembros' }
+    }
+
+    // Can't remove the owner
+    const { data: workspace } = await supabase
+        .from('workspaces')
+        .select('owner_id')
+        .eq('id', workspaceId)
+        .single()
+
+    if (workspace?.owner_id === memberId) {
+        return { error: 'No puedes eliminar al propietario del workspace' }
+    }
+
+    // Remove the member
+    const { error } = await supabase
+        .from('workspace_members')
+        .delete()
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', memberId)
+
+    if (error) {
+        console.error('Error removing member:', error)
+        return { error: 'Error al eliminar el miembro' }
+    }
+
+    revalidatePath('/', 'layout')
+    return { success: true }
+}
+
+// Leave a workspace (for non-owners)
+export async function leaveWorkspace(workspaceId: string): Promise<{ success?: boolean; error?: string }> {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'No autenticado' }
+
+    // Check if user is the owner
+    const { data: workspace } = await supabase
+        .from('workspaces')
+        .select('owner_id')
+        .eq('id', workspaceId)
+        .single()
+
+    if (workspace?.owner_id === user.id) {
+        return { error: 'El propietario no puede abandonar el workspace. Debes eliminarlo o transferir la propiedad.' }
+    }
+
+    // Remove the member
+    const { error } = await supabase
+        .from('workspace_members')
+        .delete()
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', user.id)
+
+    if (error) {
+        console.error('Error leaving workspace:', error)
+        return { error: 'Error al abandonar el workspace' }
+    }
+
+    // Clear the workspace cookie if it was the active one
+    const cookieStore = await cookies()
+    const currentWorkspaceId = cookieStore.get('workspace_id')?.value
+    if (currentWorkspaceId === workspaceId) {
+        cookieStore.delete('workspace_id')
+    }
+
+    revalidatePath('/', 'layout')
+    return { success: true }
+}
+
+// Transfer workspace ownership to another admin
+export async function transferOwnership(
+    workspaceId: string,
+    newOwnerId: string
+): Promise<{ success?: boolean; error?: string }> {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'No autenticado' }
+
+    // Verify current user is the owner
+    const { data: workspace } = await supabase
+        .from('workspaces')
+        .select('owner_id')
+        .eq('id', workspaceId)
+        .single()
+
+    if (!workspace) {
+        return { error: 'Workspace no encontrado' }
+    }
+
+    if (workspace.owner_id !== user.id) {
+        return { error: 'Solo el propietario puede transferir la propiedad' }
+    }
+
+    // Verify new owner is an admin of this workspace
+    const { data: newOwnerMembership } = await supabase
+        .from('workspace_members')
+        .select('role')
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', newOwnerId)
+        .single()
+
+    if (!newOwnerMembership || newOwnerMembership.role !== 'admin') {
+        return { error: 'El nuevo propietario debe ser un admin del workspace' }
+    }
+
+    // Transfer ownership
+    const { error } = await supabase
+        .from('workspaces')
+        .update({ owner_id: newOwnerId })
+        .eq('id', workspaceId)
+
+    if (error) {
+        console.error('Error transferring ownership:', error)
+        return { error: 'Error al transferir la propiedad' }
+    }
+
+    revalidatePath('/', 'layout')
+    return { success: true }
+}

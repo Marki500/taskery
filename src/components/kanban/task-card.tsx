@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { Card, CardContent } from "@/components/ui/card"
@@ -11,6 +12,9 @@ import { TaskSidebar } from "./task-sidebar"
 import { cn } from "@/lib/utils"
 import { format, isToday, isTomorrow, isPast, differenceInDays } from "date-fns"
 import { es } from "date-fns/locale"
+import { SubtaskProgress } from "./subtask-list"
+import { CommentCount } from "./comment-list"
+import { getTagColorStyles } from "@/lib/tag-colors"
 
 export type Task = {
     id: string
@@ -18,10 +22,13 @@ export type Task = {
     description?: string | null
     columnId: string
     tag?: string
+    tagColor?: string | null // Color name for tag
     projectId?: string
     totalTime?: number  // Accumulated time in seconds from time_entries
     deadline?: string | null  // ISO date string for deadline
     assignedTo?: string | null // User ID of assigned person
+    subtaskCount?: { total: number; completed: number } // Subtask progress
+    commentCount?: number // Number of comments
 }
 
 interface TaskCardProps {
@@ -69,7 +76,7 @@ function getDeadlineInfo(deadline: string | null | undefined) {
     return { color, bgColor, label }
 }
 
-export function TaskCard({ task, onTaskUpdated }: TaskCardProps) {
+function TaskCardComponent({ task, onTaskUpdated }: TaskCardProps) {
     const { startTimer, activeTask, elapsedSeconds } = useTimer()
     const isTimerActive = activeTask?.id === task.id
     const deadlineInfo = getDeadlineInfo(task.deadline)
@@ -123,17 +130,17 @@ export function TaskCard({ task, onTaskUpdated }: TaskCardProps) {
             {...attributes}
             {...listeners}
             className={cn(
-                "cursor-grab active:cursor-grabbing hover:shadow-lg transition-all group touch-none rounded-xl overflow-hidden",
-                "border-l-4",
+                "cursor-grab active:cursor-grabbing hover:shadow-xl transition-all duration-300 group touch-none rounded-xl overflow-hidden",
+                "border-l-4 hover:-translate-y-1",
                 leftBorderColor,
                 isTimerActive
                     ? 'ring-2 ring-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30'
                     : 'hover:ring-1 hover:ring-primary/20'
             )}
         >
-            <CardContent className="p-5 space-y-3">
+            <CardContent className="p-5 space-y-4">
                 <div className="flex items-start justify-between gap-3">
-                    <span className="text-lg font-bold leading-snug line-clamp-3 text-card-foreground/90 flex-1">
+                    <span className="text-xl font-bold leading-tight line-clamp-3 text-card-foreground flex-1 tracking-tight">
                         {task.title}
                     </span>
                     <div className="flex items-center gap-1">
@@ -176,20 +183,20 @@ export function TaskCard({ task, onTaskUpdated }: TaskCardProps) {
                 {/* Deadline Display */}
                 {deadlineInfo && (
                     <div className={cn(
-                        "flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm font-medium",
+                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold w-fit",
                         deadlineInfo.bgColor,
                         deadlineInfo.color
                     )}>
-                        <CalendarIcon className="h-3.5 w-3.5" />
+                        <CalendarIcon className="h-4 w-4" />
                         <span>{deadlineInfo.label}</span>
                     </div>
                 )}
 
                 {/* Time Display - Always visible */}
                 <div className={cn(
-                    "flex items-center gap-2 p-2 rounded-lg transition-colors",
+                    "flex items-center gap-2 p-2.5 rounded-lg transition-colors border border-transparent",
                     isTimerActive
-                        ? "bg-indigo-100 dark:bg-indigo-900/50"
+                        ? "bg-indigo-100 dark:bg-indigo-900/50 border-indigo-200"
                         : "bg-muted/50"
                 )}>
                     <Clock className={cn(
@@ -205,17 +212,53 @@ export function TaskCard({ task, onTaskUpdated }: TaskCardProps) {
                             : formatTime(task.totalTime || 0)}
                     </span>
                     {isTimerActive && (
-                        <span className="text-xs text-indigo-500 ml-auto">En curso</span>
+                        <span className="text-xs text-indigo-500 font-bold ml-auto uppercase tracking-wider">En curso</span>
                     )}
                 </div>
 
-                {/* Tag Badge */}
-                {task.tag && (
-                    <Badge variant="secondary" className="text-xs px-2.5 py-1 font-semibold rounded-md uppercase tracking-wider bg-secondary/80">
-                        {task.tag}
-                    </Badge>
-                )}
+                {/* Tag Badge, Subtask Progress and Comments */}
+                <div className="flex items-center gap-3 flex-wrap pt-1">
+                    {task.tag && (() => {
+                        const tagStyles = getTagColorStyles(task.tagColor)
+                        return (
+                            <Badge
+                                variant="secondary"
+                                className={cn(
+                                    "text-[11px] px-2.5 py-1 font-bold rounded-md uppercase tracking-wider",
+                                    tagStyles.bg,
+                                    tagStyles.text
+                                )}
+                            >
+                                {task.tag}
+                            </Badge>
+                        )
+                    })()}
+                    {task.subtaskCount && task.subtaskCount.total > 0 && (
+                        <SubtaskProgress
+                            completed={task.subtaskCount.completed}
+                            total={task.subtaskCount.total}
+                        />
+                    )}
+                    {task.commentCount !== undefined && task.commentCount > 0 && (
+                        <CommentCount count={task.commentCount} />
+                    )}
+                </div>
             </CardContent>
         </Card>
     )
 }
+
+export const TaskCard = React.memo(TaskCardComponent, (prev, next) => {
+    // Custom comparison for performance
+    return (
+        prev.task.id === next.task.id &&
+        prev.task.title === next.task.title &&
+        prev.task.description === next.task.description &&
+        prev.task.columnId === next.task.columnId &&
+        prev.task.totalTime === next.task.totalTime &&
+        prev.task.deadline === next.task.deadline &&
+        prev.task.subtaskCount?.completed === next.task.subtaskCount?.completed &&
+        prev.task.subtaskCount?.total === next.task.subtaskCount?.total &&
+        prev.task.commentCount === next.task.commentCount
+    )
+})

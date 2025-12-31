@@ -22,6 +22,9 @@ export function NewProjectDialog() {
     const [open, setOpen] = useState(false)
     const [name, setName] = useState("")
     const [description, setDescription] = useState("")
+    const [url, setUrl] = useState("")
+    const [color, setColor] = useState('indigo')
+    const [icon, setIcon] = useState('FolderKanban')
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
 
@@ -34,10 +37,11 @@ export function NewProjectDialog() {
 
         setIsLoading(true)
         try {
-            const project = await createProject(name.trim(), description.trim() || undefined)
-            toast.success("¡Proyecto creado!")
+            const project = await createProject(name.trim(), description.trim() || undefined, color, icon, url.trim() || undefined)
+            toast.success("Proyecto creado correctamente")
             setName("")
             setDescription("")
+            setUrl("")
             setOpen(false)
             // Navigate to the new project
             router.push(`/projects/${project.id}`)
@@ -85,6 +89,19 @@ export function NewProjectDialog() {
                                 placeholder="¿De qué trata este proyecto?"
                                 className="text-lg p-4"
                             />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="url" className="text-lg">URL del Proyecto (Opcional)</Label>
+                            <Input
+                                id="url"
+                                value={url}
+                                onChange={(e) => setUrl(e.target.value)}
+                                placeholder="https://ejemplo.com"
+                                className="text-lg p-4"
+                            />
+                            <p className="text-xs text-muted-foreground ml-1">
+                                Se usará el favicon como icono si se proporciona una URL.
+                            </p>
                         </div>
                     </div>
                     <DialogFooter>

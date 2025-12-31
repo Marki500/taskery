@@ -41,13 +41,13 @@ export function StatsCards() {
                             </div>
                             {/* Content Side */}
                             <div className={`flex-1 p-5 ${stat.bgLight}`}>
-                                <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                                <p className="text-base font-bold text-muted-foreground uppercase tracking-widest">
                                     {stat.title}
                                 </p>
-                                <p className="text-4xl font-bold mt-1">
+                                <p className="text-5xl font-black mt-1">
                                     {stat.value}
                                 </p>
-                                <p className="text-sm text-muted-foreground mt-2">
+                                <p className="text-base text-muted-foreground mt-2 font-medium">
                                     {stat.subtitle}
                                 </p>
                             </div>
