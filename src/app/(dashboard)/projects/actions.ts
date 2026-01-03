@@ -3,6 +3,15 @@
 import { createClient } from "@/utils/supabase/server"
 import { revalidatePath } from "next/cache"
 import { Task } from "@/components/kanban/task-card"
+import { logActivity } from "../activity/actions"
+
+// Re-export updateTaskStatus as moveTask to match plan vocabulary and allow future expansion for reordering
+export async function moveTask(taskId: string, newStatus: string, newIndex: number) {
+    // Current implementation only updates status. 
+    // TODO: Implement reordering logic when 'order' column is added to database.
+
+    return updateTaskStatus(taskId, newStatus)
+}
 
 export async function updateTaskStatus(taskId: string, newStatus: string) {
     const supabase = await createClient()
@@ -129,10 +138,10 @@ export async function getWorkspaceMembers(projectId: string): Promise<WorkspaceM
     if (!members) return []
 
     return members.map((m: any) => ({
-        id: m.profiles.id,
-        email: m.profiles.email,
-        fullName: m.profiles.full_name,
-        avatarUrl: m.profiles.avatar_url
+        id: m.profiles?.id || m.user_id,
+        email: m.profiles?.email || 'No email',
+        fullName: m.profiles?.full_name,
+        avatarUrl: m.profiles?.avatar_url
     }))
 }
 
@@ -165,6 +174,27 @@ export async function createTask(
         throw new Error('Failed to create task')
     }
 
+    // Log creation
+    try {
+        const { data: project } = await supabase
+            .from('projects')
+            .select('workspace_id')
+            .eq('id', projectId)
+            .single()
+
+        if (project) {
+            await logActivity(
+                project.workspace_id,
+                'task_created',
+                data.id,
+                'task',
+                { title }
+            )
+        }
+    } catch (e) {
+        console.error('Error logging task creation:', e)
+    }
+
     revalidatePath('/projects/[id]', 'page')
     return data
 }
@@ -177,6 +207,7 @@ export interface TaskUpdateData {
     deadline?: string | null
     assignedTo?: string | null
     status?: string
+    priority?: string
 }
 
 export async function updateTask(taskId: string, data: TaskUpdateData) {
@@ -188,7 +219,8 @@ export async function updateTask(taskId: string, data: TaskUpdateData) {
         tag: data.tag || null,
         tag_color: data.tagColor || null,
         deadline: data.deadline || null,
-        assigned_to: data.assignedTo || null
+        assigned_to: data.assignedTo || null,
+        priority: data.priority
     }
 
     if (data.status) {
@@ -203,6 +235,31 @@ export async function updateTask(taskId: string, data: TaskUpdateData) {
     if (error) {
         console.error('Error updating task:', error)
         throw new Error('Failed to update task')
+    }
+
+    // Log completion
+    if (data.status === 'done') {
+        try {
+            const { data: taskData } = await supabase
+                .from('tasks')
+                .select('project_id, projects!inner(workspace_id)')
+                .eq('id', taskId)
+                .single()
+
+            if (taskData?.projects) {
+                // @ts-ignore
+                const workspaceId = taskData.projects.workspace_id
+                await logActivity(
+                    workspaceId,
+                    'task_completed',
+                    taskId,
+                    'task',
+                    { title: data.title }
+                )
+            }
+        } catch (e) {
+            console.error('Error logging completion:', e)
+        }
     }
 
     revalidatePath('/projects/[id]', 'page')

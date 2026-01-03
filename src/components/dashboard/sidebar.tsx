@@ -38,6 +38,7 @@ import { createClient } from "@/utils/supabase/client"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { WorkspaceSelector } from "./workspace-selector"
 import { NotificationBell } from "@/components/notifications/notification-bell"
+import { useCommandMenu } from "@/components/command-menu-context"
 
 const sidebarItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
@@ -52,6 +53,7 @@ export function Sidebar() {
     const router = useRouter()
     const [isCollapsed, setIsCollapsed] = useState(false)
     const [isMobileOpen, setIsMobileOpen] = useState(false)
+    const { toggle } = useCommandMenu()
 
     const handleSignOut = async () => {
         const supabase = createClient()
@@ -127,15 +129,21 @@ export function Sidebar() {
             {/* Navigation */}
             <div className="flex-1 py-6 flex flex-col gap-2 overflow-y-auto px-3">
 
-                {/* Search Placeholder (Optional) */}
+                {/* Search Placeholder (Clickable) */}
                 {!collapsed && (
                     <div className="mb-4 relative">
-                        <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
-                        <input
-                            type="text"
-                            placeholder="Buscar..."
-                            className="w-full bg-muted/60 rounded-xl py-3 pl-11 pr-4 text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 border-transparent focus:border-primary/30 transition-all"
-                        />
+                        <button
+                            onClick={toggle}
+                            className="w-full text-left relative group"
+                        >
+                            <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                            <div className="w-full bg-muted/60 group-hover:bg-muted rounded-xl py-3 pl-11 pr-4 text-base font-medium text-muted-foreground flex justify-between items-center transition-all border border-transparent group-hover:border-primary/10">
+                                <span>Buscar...</span>
+                                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+                                    <span className="text-xs">⌘</span>K
+                                </kbd>
+                            </div>
+                        </button>
                     </div>
                 )}
 

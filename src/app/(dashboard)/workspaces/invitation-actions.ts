@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { sendInvitationEmail } from '@/lib/email'
 import { createNotification } from '@/app/(dashboard)/notifications/actions'
+import { logActivity } from '../activity/actions'
 
 // Generate a secure random token
 function generateToken(): string {
@@ -143,6 +144,15 @@ export async function createInvitation(
             data: { invitationId: invitation.id, workspaceId }
         })
     }
+
+    // Log activity
+    await logActivity(
+        workspaceId,
+        'member_invited',
+        invitation.id,
+        'invitation',
+        { email: invitation.email, role: invitation.role }
+    )
 
     revalidatePath('/settings')
 

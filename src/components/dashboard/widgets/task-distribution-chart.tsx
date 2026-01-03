@@ -1,6 +1,6 @@
 'use client'
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, Label } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { motion } from "framer-motion"
 
@@ -78,15 +78,45 @@ export function TaskDistributionChart({ data }: TaskDistributionChartProps) {
                                 {chartData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} />
                                 ))}
+                                <Label
+                                    content={({ viewBox }) => {
+                                        if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                                            return (
+                                                <text
+                                                    x={viewBox.cx}
+                                                    y={viewBox.cy}
+                                                    textAnchor="middle"
+                                                    dominantBaseline="middle"
+                                                >
+                                                    <tspan
+                                                        x={viewBox.cx}
+                                                        y={viewBox.cy}
+                                                        className="fill-foreground text-3xl font-bold"
+                                                    >
+                                                        {total}
+                                                    </tspan>
+                                                    <tspan
+                                                        x={viewBox.cx}
+                                                        y={(viewBox.cy || 0) + 24}
+                                                        className="fill-muted-foreground text-xs"
+                                                    >
+                                                        Tareas
+                                                    </tspan>
+                                                </text>
+                                            )
+                                        }
+                                    }}
+                                />
                             </Pie>
                             <Tooltip
                                 contentStyle={{
-                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                    backgroundColor: 'hsl(var(--card))',
                                     borderRadius: '12px',
-                                    border: 'none',
+                                    border: '1px solid hsl(var(--border))',
                                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                                     fontSize: '14px',
-                                    fontWeight: 'bold'
+                                    fontWeight: 'bold',
+                                    color: 'hsl(var(--foreground))'
                                 }}
                             />
                             <Legend
@@ -95,13 +125,13 @@ export function TaskDistributionChart({ data }: TaskDistributionChartProps) {
                                 iconType="circle"
                                 formatter={(value, entry: any) => {
                                     const percentage = ((entry.payload.value / total) * 100).toFixed(0)
-                                    return `${value}: ${entry.payload.value} (${percentage}%)`
+                                    return <span className="text-slate-600 dark:text-slate-300 ml-1">{value} ({percentage}%)</span>
                                 }}
                             />
                         </PieChart>
                     </ResponsiveContainer>
                 </CardContent>
-            </Card>
-        </motion.div>
+            </Card >
+        </motion.div >
     )
 }

@@ -94,19 +94,33 @@ export function NotificationBell() {
                 className="w-80 p-0"
                 sideOffset={8}
             >
-                <div className="flex items-center justify-between p-3 border-b">
-                    <h3 className="font-semibold">Notificaciones</h3>
-                    {unreadCount > 0 && (
+                <div className="flex items-center justify-between p-3 border-b bg-muted/30">
+                    <h3 className="font-semibold text-sm">Notificaciones</h3>
+                    <div className="flex gap-2">
+                        {unreadCount > 0 && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-xs px-2 hover:bg-muted"
+                                onClick={handleMarkAllRead}
+                                title="Marcar todo como leído"
+                            >
+                                <CheckCheck className="h-3.5 w-3.5" />
+                            </Button>
+                        )}
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 text-xs"
-                            onClick={handleMarkAllRead}
+                            className="h-7 text-xs px-2 hover:bg-muted"
+                            onClick={() => {
+                                setIsOpen(false)
+                                router.push('/notifications')
+                            }}
+                            title="Ver historial completo"
                         >
-                            <CheckCheck className="h-3 w-3 mr-1" />
-                            Marcar todo leído
+                            <Mail className="h-3.5 w-3.5" />
                         </Button>
-                    )}
+                    </div>
                 </div>
 
                 <div className="max-h-[400px] overflow-y-auto">

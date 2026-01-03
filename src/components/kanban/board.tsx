@@ -17,7 +17,7 @@ import {
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { KanbanColumn } from './column'
 import { Task, TaskCard } from './task-card'
-import { getProjectTasks, updateTaskStatus } from '@/app/(dashboard)/projects/actions'
+import { getProjectTasks, updateTaskStatus, moveTask } from '@/app/(dashboard)/projects/actions'
 import { toast } from "sonner"
 import { NewTaskDialog } from './new-task-dialog'
 import { useTimer } from '@/contexts/timer-context'
@@ -240,7 +240,8 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
                 try {
                     // Only call API if we suspect a change or just to enforce consistency
                     // Optimistic update handled by DragOver looks good, this saves it.
-                    await updateTaskStatus(activeId, newStatus)
+                    // We pass 0 as index for now since we don't persist order yet
+                    await moveTask(activeId, newStatus, 0)
                     // No toast success needed for every drag, acts as background sync
                 } catch (e) {
                     toast.error("Error al guardar cambios")

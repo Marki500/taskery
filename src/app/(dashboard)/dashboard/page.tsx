@@ -7,6 +7,7 @@ import { ProductivityChart } from "@/components/dashboard/widgets/productivity-c
 import { FocusList } from "@/components/dashboard/widgets/focus-list"
 import { TaskDistributionChart } from "@/components/dashboard/widgets/task-distribution-chart"
 import { TimeTrackingWidget } from "@/components/dashboard/widgets/time-tracking-widget"
+import { DashboardActivityWrapper } from "@/components/dashboard/widgets/dashboard-activity-wrapper"
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -56,10 +57,18 @@ export default async function DashboardPage() {
                 </div>
             </div>
 
-            {/* 4. Secondary Grid - Distribution & Time Tracking */}
+            {/* 4. Secondary Grid - Dist & Activity */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <TaskDistributionChart data={stats.tasksByStatus} />
-                <TimeTrackingWidget totalHours={stats.totalHoursThisWeek} />
+                <div className="grid gap-6">
+                    <TaskDistributionChart data={stats.tasksByStatus} />
+                    <TimeTrackingWidget totalHours={stats.totalHoursThisWeek} />
+                </div>
+
+                {/* 5. Activity Feed */}
+                <div className="h-[500px]">
+                    {/* We need a workspace ID for the feed. For now we use the first one found or empty */}
+                    <DashboardActivityWrapper userId={user.id} />
+                </div>
             </div>
         </div>
     )

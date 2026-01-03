@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server"
 import { getActiveWorkspace } from "@/app/(dashboard)/workspaces/actions"
+import { revalidatePath } from "next/cache"
 
 export interface CalendarTask {
     id: string
@@ -56,4 +57,21 @@ export async function getCalendarTasks(): Promise<CalendarTask[]> {
         projectName: projectMap[t.project_id] || 'Proyecto',
         tag: t.tag || null
     }))
+}
+
+export async function updateTaskDate(taskId: string, newDate: string) {
+    const supabase = await createClient()
+
+    const { error } = await supabase
+        .from('tasks')
+        .update({ deadline: newDate })
+        .eq('id', taskId)
+
+    if (error) {
+        console.error('Error updating task date:', error)
+        throw new Error('Failed to update task date')
+    }
+
+    revalidatePath('/calendar')
+    return { success: true }
 }

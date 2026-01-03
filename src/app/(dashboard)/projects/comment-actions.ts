@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server"
 import { revalidatePath } from "next/cache"
+import { logActivity } from "../activity/actions"
 
 export interface Comment {
     id: string
@@ -80,6 +81,29 @@ export async function createComment(
     }
 
     revalidatePath('/projects/[id]', 'page')
+
+    // Log activity
+    try {
+        const { data: taskData } = await supabase
+            .from('tasks')
+            .select('project_id, projects!inner(workspace_id)')
+            .eq('id', taskId)
+            .single()
+
+        if (taskData?.projects) {
+            // @ts-ignore
+            const workspaceId = taskData.projects.workspace_id
+            await logActivity(
+                workspaceId,
+                'comment_created',
+                data.id,
+                'comment',
+                { content: content.substring(0, 50), taskId }
+            )
+        }
+    } catch (e) {
+        console.error('Error logging comment:', e)
+    }
 
     return {
         comment: {

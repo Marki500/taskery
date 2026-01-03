@@ -148,16 +148,58 @@ export async function getDashboardStats() {
         .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
         .slice(0, 5)
 
-    // Mock weekly activity for chart (real implementation would need a separate history table or complex query)
-    const weeklyActivity = [
-        { name: 'L', total: 4, completed: 2 },
-        { name: 'M', total: 6, completed: 4 },
-        { name: 'X', total: 3, completed: 1 },
-        { name: 'J', total: 8, completed: 5 },
-        { name: 'V', total: 5, completed: 3 },
-        { name: 'S', total: 2, completed: 2 },
-        { name: 'D', total: 0, completed: 0 },
-    ]
+    // Real weekly activity from workspace_activity
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
+    sevenDaysAgo.setHours(0, 0, 0, 0)
+
+    const { data: activityLogs } = await supabase
+        .from('workspace_activity')
+        .select('action_type, created_at')
+        .in('workspace_id', workspaceIds)
+        .gte('created_at', sevenDaysAgo.toISOString())
+
+    const daysMap = new Map<string, { total: number, completed: number }>()
+
+    // Initialize last 7 days
+    for (let i = 0; i < 7; i++) {
+        const d = new Date()
+        d.setDate(d.getDate() - i)
+        // Store as YYYY-MM-DD for grouping
+        const dateKey = d.toISOString().split('T')[0]
+        // Store day name for display (e.g. "L", "M")
+        const dayName = ['D', 'L', 'M', 'X', 'J', 'V', 'S'][d.getDay()]
+        daysMap.set(dateKey, { total: 0, completed: 0 })
+    }
+
+    if (activityLogs) {
+        activityLogs.forEach((log: any) => {
+            const dateKey = new Date(log.created_at).toISOString().split('T')[0]
+            if (daysMap.has(dateKey)) {
+                const dayStats = daysMap.get(dateKey)!
+                if (log.action_type === 'task_created') {
+                    dayStats.total += 1
+                } else if (log.action_type === 'task_completed') {
+                    dayStats.completed += 1
+                }
+            }
+        })
+    }
+
+    // Convert map to array and sort by date (oldest first)
+    const weeklyActivity = Array.from(daysMap.entries())
+        .map(([dateKey, stats]) => {
+            const date = new Date(dateKey)
+            const dayName = ['D', 'L', 'M', 'X', 'J', 'V', 'S'][date.getDay()]
+            return {
+                name: dayName,
+                total: stats.total,
+                completed: stats.completed,
+                date: date // keep date for potential sorting reference if needed
+            }
+        })
+        .sort((a, b) => a.date.getTime() - b.date.getTime())
+        .map(({ name, total, completed }) => ({ name, total, completed }))
 
     // Task distribution by status for donut chart
     const tasksByStatus = {

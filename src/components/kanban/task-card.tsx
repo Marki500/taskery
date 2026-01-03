@@ -5,7 +5,8 @@ import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { GripVertical, Play, Clock, CalendarIcon, Pencil } from "lucide-react"
+import { GripVertical, Play, Clock, CalendarIcon, Pencil, Eye } from "lucide-react"
+import Link from "next/link"
 import { useTimer, formatTime } from "@/contexts/timer-context"
 import { Button } from "@/components/ui/button"
 import { TaskSidebar } from "./task-sidebar"
@@ -140,10 +141,25 @@ function TaskCardComponent({ task, onTaskUpdated }: TaskCardProps) {
         >
             <CardContent className="p-5 space-y-4">
                 <div className="flex items-start justify-between gap-3">
-                    <span className="text-xl font-bold leading-tight line-clamp-3 text-card-foreground flex-1 tracking-tight">
+                    <Link
+                        href={`/projects/${task.projectId}/tasks/${task.id}`}
+                        className="text-xl font-bold leading-tight line-clamp-3 text-card-foreground flex-1 tracking-tight hover:text-primary transition-colors cursor-pointer block"
+                        onPointerDown={(e) => e.stopPropagation()}
+                    >
                         {task.title}
-                    </span>
+                    </Link>
                     <div className="flex items-center gap-1">
+                        {/* View Details Button */}
+                        <Link href={`/projects/${task.projectId}/tasks/${task.id}`}>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary"
+                                onPointerDown={(e) => e.stopPropagation()}
+                            >
+                                <Eye className="h-4 w-4" />
+                            </Button>
+                        </Link>
                         {/* Edit Button - Opens Sidebar */}
                         <TaskSidebar
                             task={task}

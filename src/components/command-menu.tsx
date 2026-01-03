@@ -19,28 +19,36 @@ import {
     Laptop,
     LogOut
 } from "lucide-react"
+import { getProjects } from "@/app/(dashboard)/projects/project-actions"
+import { getTasksWithDeadlines } from "@/app/(dashboard)/dashboard/actions"
+
+import { useCommandMenu } from "@/components/command-menu-context"
 
 export function CommandMenu() {
     const router = useRouter()
-    const [open, setOpen] = React.useState(false)
+    const { open, setOpen } = useCommandMenu()
     const { setTheme } = useTheme()
-
-    React.useEffect(() => {
-        const down = (e: KeyboardEvent) => {
-            if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault()
-                setOpen((open) => !open)
-            }
-        }
-
-        document.addEventListener("keydown", down)
-        return () => document.removeEventListener("keydown", down)
-    }, [])
 
     const runCommand = React.useCallback((command: () => unknown) => {
         setOpen(false)
         command()
     }, [])
+
+    const [projects, setProjects] = React.useState<any[]>([])
+    const [tasks, setTasks] = React.useState<any[]>([])
+
+    React.useEffect(() => {
+        if (open) {
+            // Lazy load data when opened
+            Promise.all([
+                getProjects().catch(() => []),
+                getTasksWithDeadlines().catch(() => [])
+            ]).then(([p, t]) => {
+                setProjects(p)
+                setTasks(t)
+            })
+        }
+    }, [open])
 
     if (!open) return null
 
@@ -67,6 +75,24 @@ export function CommandMenu() {
                             No se encontraron resultados.
                         </Command.Empty>
 
+                        <Command.Group heading="Proyectos" className="text-xs font-medium text-slate-500 dark:text-indigo-300/60 px-2 py-1.5 uppercase tracking-widest">
+                            {projects.map(project => (
+                                <CommandItem key={project.id} onSelect={() => runCommand(() => router.push(`/projects/${project.id}`))}>
+                                    <FolderKanban className="mr-2 h-4 w-4" />
+                                    <span>{project.name}</span>
+                                </CommandItem>
+                            ))}
+                        </Command.Group>
+
+                        <Command.Group heading="Tareas" className="text-xs font-medium text-slate-500 dark:text-indigo-300/60 px-2 py-1.5 uppercase tracking-widest">
+                            {tasks.map(task => (
+                                <CommandItem key={task.id} onSelect={() => runCommand(() => router.push(`/projects/${task.projectId}?taskId=${task.id}`))}>
+                                    <span className={task.status === 'done' ? 'line-through opacity-50' : ''}>{task.title}</span>
+                                    <span className="ml-auto text-xs opacity-50">{task.projectName}</span>
+                                </CommandItem>
+                            ))}
+                        </Command.Group>
+
                         <Command.Group heading="Navegación" className="text-xs font-medium text-slate-500 dark:text-indigo-300/60 px-2 py-1.5 uppercase tracking-widest">
                             <CommandItem onSelect={() => runCommand(() => router.push('/dashboard'))}>
                                 <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -79,6 +105,15 @@ export function CommandMenu() {
                             <CommandItem onSelect={() => runCommand(() => router.push('/calendar'))}>
                                 <Calendar className="mr-2 h-4 w-4" />
                                 <span>Calendario</span>
+                            </CommandItem>
+                            <CommandItem onSelect={() => runCommand(() => router.push('/notifications'))}>
+                                <div className="mr-2 h-4 w-4 flex items-center justify-center">
+                                    <span className="relative flex h-3 w-3">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+                                    </span>
+                                </div>
+                                <span>Notificaciones</span>
                             </CommandItem>
                             <CommandItem onSelect={() => runCommand(() => router.push('/settings'))}>
                                 <Settings className="mr-2 h-4 w-4" />
